@@ -360,7 +360,8 @@ export class Room {
     if (!rp) return;
     this.broadcast({
       type: "S2C_ROULETTE_PHASE",
-      hashSeed: rp.hashSeed,
+      // real commitment: sha256(seed). The seed stays on the server until the spin.
+      hashSeed: commitHash(rp.seed ?? ""),
       windowSec: CONFIG.roulette.windowSec,
       players: this.state.players.map(p => ({ id: p.id, money: p.money })),
     });

@@ -58,7 +58,7 @@ const bot = (ws, name) => (m) => {
   }
   if (m.type === "S2C_ROULETTE_PHASE") {
     roulettePhases++;
-    if (!/^[0-9a-f]{8,}$/.test(m.hashSeed ?? "")) commitRevealOk = false;
+    if (!/^[0-9a-f]{64}$/.test(m.hashSeed ?? "")) commitRevealOk = false;
     // every player bets once; try one of each colour across phases
     const betAmount = 10;
     send(ws, { type: "C2S_ROULETTE_BET", choice: roulettePhases % 2 === 0 ? "red" : "black", amount: betAmount });
