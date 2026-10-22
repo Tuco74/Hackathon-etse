@@ -91,6 +91,25 @@ Tono de trastero, seco y con humor, siempre subordinado al dato:
   sin errores de consola; `prefers-reduced-motion` muestra todo al instante.
 - `pnpm --filter @trastero/client run build` + `node tools/check-leak.mjs` en verde.
 
+## 7.1 Jugar en LAN (varios ordenadores)
+
+`localhost` solo existe en la máquina que ejecuta el servidor. Para jugar entre
+varios equipos, una sola persona levanta el stack y comparte su IP:
+
+```bash
+pnpm --filter @trastero/client exec vite --host 0.0.0.0
+```
+
+El resto abre `http://<IP-del-anfitrión>:5173/?room=ABCD`. El proxy de Vite lleva
+`/ws` al servidor local (2567), así que los demás no ejecutan nada. Si la red
+bloquea el tráfico entre clientes (aislamiento Wi-Fi), usa un túnel o despliega
+con `docker-compose`.
+
+Aviso de contexto seguro: sobre `http://<IP>` el navegador no expone
+`crypto.randomUUID`. `net/socket.ts` cae a bytes aleatorios para los ids; no
+dependas de otras APIs de contexto seguro (por ejemplo, `navigator.clipboard`
+tiene fallback con `execCommand`).
+
 ## 8. Decisiones y límites conocidos
 
 - **`GameScene` ya no pinta texto ni botones**: eran placeholders de C y

@@ -134,7 +134,8 @@ export class UiRoot {
       // join is answered with ROOM_NOT_FOUND (no room attached yet).
       this.clock.start();
       history.replaceState(null, "", `?room=${encodeURIComponent(code)}`);
-    } catch {
+    } catch (error) {
+      console.error("[ui] join failed", error);
       this.lobby.showEntryError("No se pudo conectar al servidor. ¿Está arrancado?");
     }
   }

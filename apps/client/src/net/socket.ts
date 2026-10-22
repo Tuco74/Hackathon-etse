@@ -2,6 +2,24 @@ import type { C2SMessage, S2CMessage } from "@trastero/shared";
 
 type Handler = (msg: S2CMessage) => void;
 
+/**
+ * crypto.randomUUID only exists in secure contexts (https or localhost).
+ * A LAN demo served over plain http would crash on every message, so fall
+ * back to random bytes. Message ids are only used to deduplicate.
+ */
+function messageId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 export class GameSocket {
   private ws: WebSocket | null = null;
   private handlers = new Set<Handler>();
@@ -49,7 +67,7 @@ export class GameSocket {
       JSON.stringify({
         v: 1,
         type: msg.type,
-        id: crypto.randomUUID(),
+        id: messageId(),
         ts: Date.now(),
         payload: msg,
       }),
