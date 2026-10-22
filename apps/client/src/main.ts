@@ -7,6 +7,7 @@ import { Director } from "./game/director";
 import { session } from "./game/session";
 import { attachIntegerScaling, integerZoom } from "./game/scaling";
 import { socket, type NetStatus } from "./net/socket";
+import { anyDialogOpen, openHelp } from "./game/overlays";
 import { BootScene } from "./scenes/BootScene";
 import { LobbyScene } from "./scenes/LobbyScene";
 import { GarageScene } from "./scenes/GarageScene";
@@ -31,6 +32,12 @@ const actionsEl = $<HTMLDivElement>("actions");
 const errorEl = $<HTMLDivElement>("error");
 const netEl = $<HTMLDivElement>("net");
 const muteBtn = $<HTMLButtonElement>("muteBtn");
+const helpBtn = $<HTMLButtonElement>("helpBtn");
+
+function signedMoneyText(value: number): string {
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "±";
+  return `${sign}${Math.abs(value).toLocaleString("de-DE")} €`;
+}
 
 interface SavedSession {
   roomCode: string;
@@ -105,7 +112,7 @@ function renderPlayers(players: PlayerPublic[]): void {
         .filter(Boolean)
         .join(" ");
       return `<div class="${classes}">
-        ${esc(player.nickname)}${isMe ? " (tú)" : ""} · ${player.money}€ ${player.ready ? "· LISTO" : ""}
+        ${esc(player.nickname)}${isMe ? " (tú)" : ""} · ${player.money.toLocaleString("de-DE")} € ${player.ready ? "· LISTO" : ""}
       </div>`;
     })
     .join("");
@@ -165,12 +172,26 @@ function clearRouletteActions(): void {
   if (actionsEl.dataset.mode !== "roulette") return;
   actionsEl.replaceChildren();
   delete actionsEl.dataset.mode;
+  hud.classList.remove("roulette-open");
+}
+
+function betChips(cash: number): Array<{ label: string; amount: number }> {
+  if (cash < 10) return [];
+  const seen = new Set<number>();
+  const chips: Array<{ label: string; amount: number }> = [];
+  for (const pct of [10, 25, 50, 100] as const) {
+    const amount = Math.min(cash, Math.max(10, Math.floor((cash * pct) / 100 / 10) * 10));
+    if (seen.has(amount)) continue;
+    seen.add(amount);
+    chips.push({ label: pct === 100 ? "TODO" : `${pct} %`, amount });
+  }
+  return chips;
 }
 
 /**
- * Roulette panel. It is re-rendered on every S2C_ROULETTE_PHASE snapshot, so
- * each player sees who has already bet/passed and the "Girar" button unlocks
- * as soon as everyone has decided. The server still auto-spins at the deadline.
+ * Roulette panel. Re-rendered on every S2C_ROULETTE_PHASE snapshot, so each
+ * player sees who has already bet/passed and "Girar" unlocks when everyone has
+ * decided. The server still auto-spins at the deadline.
  */
 function buildRouletteActions(): void {
   const phase = session.roulettePhase;
@@ -181,15 +202,13 @@ function buildRouletteActions(): void {
   const iPassed = phase.passed.includes(session.playerId);
   const decided = myBet !== undefined || iPassed;
 
-  const options = [
-    ...new Set([10, 50, 100, Math.floor(moneyNow / 2), moneyNow].filter(
-      (value) => value >= 10 && value <= moneyNow,
-    )),
-  ];
-  if (options.length === 0) options.push(10);
-  if (!options.includes(betAmount)) betAmount = options[0] ?? 10;
+  const chips = betChips(moneyNow);
+  if (chips.length > 0 && !chips.some((chip) => chip.amount === betAmount)) {
+    betAmount = chips[0]?.amount ?? 10;
+  }
 
   actionsEl.dataset.mode = "roulette";
+  hud.classList.add("roulette-open");
   actionsEl.replaceChildren();
 
   const info = document.createElement("span");
@@ -205,30 +224,64 @@ function buildRouletteActions(): void {
   }
   actionsEl.append(info);
 
-  const amounts = document.createElement("button");
-  amounts.textContent = `Apuesta: ${betAmount} €`;
-  amounts.disabled = decided || moneyNow < 10;
-  amounts.onclick = () => {
-    const index = options.indexOf(betAmount);
-    betAmount = options[(index + 1) % options.length] ?? 10;
-    buildRouletteActions();
-  };
-  actionsEl.append(amounts);
+  const label = document.createElement("span");
+  label.className = "action-label";
+  label.textContent = `APUESTA: ${betAmount} €`;
+  actionsEl.append(label);
 
-  for (const choice of ["red", "black", "green"] as const) {
+  for (const chip of chips) {
     const button = document.createElement("button");
-    button.textContent =
-      choice === "red" ? "Rojo 1:1" : choice === "black" ? "Negro 1:1" : "Verde 35:1";
+    button.type = "button";
+    button.textContent = chip.label;
+    button.title = `${chip.amount} €`;
+    button.dataset.amount = String(chip.amount);
+    button.setAttribute("aria-pressed", String(chip.amount === betAmount));
+    button.disabled = decided;
+    button.onclick = () => {
+      betAmount = chip.amount;
+      label.textContent = `APUESTA: ${betAmount} €`;
+      for (const other of Array.from(
+        actionsEl.querySelectorAll<HTMLButtonElement>("[data-amount]"),
+      )) {
+        other.setAttribute("aria-pressed", String(Number(other.dataset.amount) === betAmount));
+      }
+      announce(`Apuesta de ${betAmount} euros seleccionada.`);
+    };
+    actionsEl.append(button);
+  }
+  if (chips.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "action-hint";
+    empty.textContent = "No te queda dinero para apostar. El polvo es gratis.";
+    actionsEl.append(empty);
+  }
+
+  const colours = [
+    { choice: "red" as const, symbol: "◆", label: "ROJO", odds: "1:1" },
+    { choice: "black" as const, symbol: "●", label: "NEGRO", odds: "1:1" },
+    { choice: "green" as const, symbol: "★", label: "VERDE 0", odds: "35:1" },
+  ];
+  for (const colour of colours) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.choice = colour.choice;
+    button.className = `bet bet--${colour.choice}`;
+    // Symbol + label + odds: colour is never the only signal.
+    button.innerHTML = `<span aria-hidden="true">${colour.symbol}</span> ${colour.label} <small>${colour.odds}</small>`;
     button.disabled = decided || moneyNow < betAmount;
     button.onclick = () => {
-      button.disabled = true;
       info.textContent = "Enviando apuesta…";
-      socket.send({ type: "C2S_ROULETTE_BET", choice, amount: betAmount });
+      socket.send({ type: "C2S_ROULETTE_BET", choice: colour.choice, amount: betAmount });
+      announce(`Apuesta de ${betAmount} euros al ${colour.label.toLowerCase()}.`);
+      for (const other of Array.from(actionsEl.querySelectorAll<HTMLButtonElement>("button"))) {
+        other.disabled = true;
+      }
     };
     actionsEl.append(button);
   }
 
   const pass = document.createElement("button");
+  pass.type = "button";
   pass.textContent = "Pasar";
   pass.disabled = decided;
   pass.onclick = () => {
@@ -239,6 +292,7 @@ function buildRouletteActions(): void {
   actionsEl.append(pass);
 
   const spin = document.createElement("button");
+  spin.type = "button";
   spin.textContent = phase.readyToSpin ? "Girar ahora" : "Girar (esperando…)";
   spin.disabled = !phase.readyToSpin;
   spin.title = phase.readyToSpin
@@ -409,11 +463,28 @@ socket.on((msg) => {
   }
   if (msg.type === "S2C_GAME_OVER") {
     clearRouletteActions();
-    actionsEl.innerHTML = "";
+    actionsEl.replaceChildren();
     const again = document.createElement("button");
     again.textContent = "Ver sala";
+    again.className = "reload";
     again.onclick = () => window.location.reload();
     actionsEl.append(again);
+
+    const mine = session.revealHistory.filter(
+      (entry) => entry.winnerId === session.playerId && entry.profit !== null,
+    );
+    if (mine.length === 0) {
+      statusEl.textContent = "No compraste ningún trastero. Digno de estudio.";
+    } else {
+      const sorted = [...mine].sort((a, b) => (b.profit ?? 0) - (a.profit ?? 0));
+      const best = sorted[0];
+      const worst = sorted[sorted.length - 1];
+      statusEl.textContent =
+        sorted.length === 1
+          ? `Tu compra: ${signedMoneyText(best?.profit ?? 0)} (ronda ${best?.round ?? "?"}).`
+          : `Mejor compra: ${signedMoneyText(best?.profit ?? 0)} (ronda ${best?.round ?? "?"}) · ` +
+            `peor: ${signedMoneyText(worst?.profit ?? 0)} (ronda ${worst?.round ?? "?"}).`;
+    }
   }
 
   window.dispatchEvent(new CustomEvent("tw:msg", { detail: msg }));
@@ -439,10 +510,51 @@ muteBtn.addEventListener("click", () => {
   muteBtn.textContent = muted ? "SONIDO OFF" : "SONIDO ON";
   muteBtn.setAttribute("aria-pressed", String(muted));
 });
+helpBtn.addEventListener("click", () => openHelp());
+
 window.addEventListener("keydown", (event) => {
-  if (event.key.toLowerCase() === "m" && !(event.target instanceof HTMLInputElement)) {
+  if (event.key.toLowerCase() === "m" && !(event.target instanceof HTMLInputElement) && !anyDialogOpen()) {
     const muted = audio.toggle();
     muteBtn.textContent = muted ? "SONIDO OFF" : "SONIDO ON";
+    muteBtn.setAttribute("aria-pressed", String(muted));
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  const target = event.target as HTMLElement | null;
+  const interactive =
+    !!target &&
+    (target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.tagName === "SELECT" ||
+      target.tagName === "BUTTON" ||
+      target.isContentEditable);
+  if (interactive || anyDialogOpen()) return;
+
+  if (event.key === "?" || (event.key === "/" && event.shiftKey)) {
+    event.preventDefault();
+    openHelp();
+    return;
+  }
+
+  if (session.phase === "ROULETTE") {
+    const key = event.key.toLowerCase();
+    const choice = key === "r" ? "red" : key === "n" ? "black" : key === "v" ? "green" : null;
+    if (choice) {
+      event.preventDefault();
+      actionsEl.querySelector<HTMLButtonElement>(`[data-choice="${choice}"]`)?.click();
+    }
+    return;
+  }
+
+  if (session.phase !== "AUCTION" || !game || !game.scene.isActive("garage")) return;
+  const garage = game.scene.getScene("garage") as GarageScene;
+  if (event.key === "Enter") {
+    event.preventDefault();
+    garage.bidMinimum();
+  } else if (event.key.toLowerCase() === "t") {
+    event.preventDefault();
+    void garage.allIn();
   }
 });
 

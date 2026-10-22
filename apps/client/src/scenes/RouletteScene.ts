@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import type { S2CMessage } from "@trastero/shared";
 import { getManifest, onGameMessage } from "../game/bus";
 import { audio } from "../game/audio";
+import { announce, prefersReducedMotion } from "../game/a11y";
 import { session } from "../game/session";
 import { createBackdrop, unitForRound, type Backdrop } from "../render/backdrop";
 import { DEPTH, GOLD, GREY, RED, WHITE, addLabel, addPanel, money } from "../render/stage";
@@ -101,6 +102,12 @@ export class RouletteScene extends Phaser.Scene {
     const sector = candidates[Math.floor(Math.random() * candidates.length)] ?? 0;
     const target = 360 * 5 - sector * (360 / sectors);
 
+    if (prefersReducedMotion()) {
+      this.wheel.setAngle(target);
+      this.showResult(result);
+      return;
+    }
+
     this.tweens.add({
       targets: this.wheel,
       angle: target,
@@ -115,11 +122,12 @@ export class RouletteScene extends Phaser.Scene {
     audio.play("sfx_roulette");
     const colour = colourOf(result.result);
     const colourEs = colour === "red" ? "ROJO" : colour === "black" ? "NEGRO" : "VERDE 0";
+    const symbol = colour === "red" ? "◆" : colour === "black" ? "●" : "★";
     const mine = result.payouts.find((p) => p.playerId === session.playerId);
     const delta = mine?.delta ?? 0;
 
     addPanel(this, 108, 208, 264, 58, "panel_dark").setDepth(DEPTH.overlay);
-    addLabel(this, W / 2, 212, `${result.result} · ${colourEs}`, GOLD, [0.5, 0]).setDepth(
+    addLabel(this, W / 2, 212, `${result.result} · ${symbol} ${colourEs}`, GOLD, [0.5, 0]).setDepth(
       DEPTH.overlay + 1,
     );
     const text =
@@ -127,12 +135,20 @@ export class RouletteScene extends Phaser.Scene {
         ? "No apostaste"
         : delta === 0
           ? "Apuesta devuelta"
-          : `${delta > 0 ? "+" : "−"}${money(Math.abs(delta))} · saldo ${money(mine.money)}`;
+          : `${delta > 0 ? "+" : "-"}${money(Math.abs(delta))} · saldo ${money(mine.money)}`;
     addLabel(this, W / 2, 232, text, delta > 0 ? GOLD : delta < 0 ? RED : GREY, [0.5, 0]).setDepth(
       DEPTH.overlay + 1,
     );
     addLabel(this, 12, 252, `semilla ${result.seed.slice(0, 24)}…`, GREY).setDepth(
       DEPTH.overlay + 1,
+    );
+    announce(
+      `Ruleta: ${result.result}, ${colourEs}. ` +
+        (mine === undefined
+          ? "No apostaste."
+          : delta === 0
+            ? "Apuesta devuelta."
+            : `${delta > 0 ? "Ganas" : "Pierdes"} ${money(Math.abs(delta))}. Saldo ${money(mine.money)}.`),
     );
   }
 }

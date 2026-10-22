@@ -37,7 +37,7 @@ export function addLabel(
 }
 
 export function money(amount: number): string {
-  return `${amount.toLocaleString("es-ES")} €`;
+  return `${amount.toLocaleString("de-DE")} €`;
 }
 
 interface ButtonOptions {
