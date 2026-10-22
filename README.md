@@ -33,11 +33,26 @@ pnpm --filter @trastero/server run dev
 pnpm --filter @trastero/client run dev
 ```
 
+### Cliente sin servidor (mock)
+
+El cliente trae una sala simulada con bots y timers reales:
+
+```bash
+pnpm --filter @trastero/client run dev
+# http://localhost:5173/?mock=1        partida de 3 rondas, ruleta tras la 2
+# http://localhost:5173/?mock=1&roulette=1   adelanta la ruleta a la ronda 1
+```
+
+Es solo para desarrollo/demo: los valores viven en el chunk del mock y nunca se
+envían antes del revelado.
+
 ### Reconexión
 
-Cada pestaña guarda `{roomCode, playerId, token}` en `localStorage` (`tw.session`). Si
-recargas o se cae la red, el cliente reconecta al mismo asiento durante **45 s** y recibe
-el snapshot de la fase actual; pasado ese plazo el asiento se libera.
+Cada pestaña guarda su sesión (`{roomCode, playerId, token}`) en `sessionStorage`, así
+que dos pestañas pueden ser dos jugadores distintos. Si recargas o se cae la red, el
+cliente envía `C2S_RECONNECT` y recupera el mismo asiento durante **45 s**, con el
+snapshot de la fase actual (subasta incluida). Pasado ese plazo el asiento se libera y
+el servidor responde `SEAT_EXPIRED`.
 
 ## Comandos
 

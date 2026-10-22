@@ -183,8 +183,9 @@ Reglas:
 
 ## 6. Tipografía
 
-`assets/atlases/font.png` + `font.json` (BMFont JSON, cargable con
-`this.load.bitmapFont('pixel', 'atlases/font.png', 'atlases/font.json')`).
+`assets/atlases/font.png` + `font.xml` (BMFont XML, cargable con
+`this.load.bitmapFont('pixel', 'atlases/font.png', 'atlases/font.xml')`); se
+exporta también `font.json` con los mismos datos para otras herramientas.
 
 - Caja 6 × 14 px, avance 6 px: 80 caracteres por línea a 480 px.
 - Mayúsculas 5 × 7, x-height 5 px, descendentes 2 px, acentos incluidos.

@@ -278,3 +278,127 @@ El generador asigna una categoría por lote; el payload público de revelado no
 incluye categoría por objeto. La UI usa `lot.category` para las etiquetas y mapea
 las categorías del servidor (`jewelry`, `art`, `antique`, `misc`) a los 8 iconos
 de E.
+## C — Cliente: motor, render y red
+
+### D-C01 — Escalado entero con `Scale.NONE` + zoom calculado
+
+**Contexto:** `Scale.FIT` escala de forma fraccionaria y emborrona el pixel art.
+
+**Decisión:** Phaser arranca en `Scale.NONE` con `zoom = floor(min(vw/480, vh/270))`
+(mínimo 1) y `autoCenter: CENTER_BOTH`; en `resize`/`orientationchange` se recalcula
+el zoom entero. La UI DOM (lobby/HUD/acciones) queda a tamaño de ventana.
+
+**Consecuencias:** nunca hay escalas fraccionarias ni blur; en 800×600 se juega a ×1
+y en 1920×1080 a ×4. `attachIntegerScaling()` centraliza el cálculo.
+
+### D-C02 — Assets servidos en `/game-assets` con lista blanca
+
+**Contexto:** `assets/` cuelga de la raíz del repo y contiene `catalog.json` con
+valores reales; un `publicDir` directo filtraría secretos al bundle.
+
+**Decisión:** plugin de Vite (`vite.config.ts`) que (a) sirve en dev solo ficheros
+permitidos bajo `/game-assets/` y (b) copia a `dist/game-assets/` únicamente los
+ficheros referenciados por `manifest.json` más `catalog.public.json`.
+
+**Consecuencias:** `apps/client/dist/game-assets/catalog.json` no existe y
+`tools/check-leak.mjs` sigue en verde. Los assets no se duplican en el repo.
+
+### D-C03 — `mockServer` con partida completa y parámetros de demo
+
+**Decisión:** `src/net/mockServer.ts` implementa el mismo protocolo que la sala
+(timers, bots, commit–reveal, desierto) en memoria. Se activa con `?mock=1`
+(3 rondas, ruleta tras la ronda 2; `&roulette=1` la adelanta). El módulo se carga
+con import dinámico solo en modo mock.
+
+**Consecuencias:** se puede desarrollar y demostrar el cliente sin B. Los valores
+del mock viven en ese chunk, nunca se emiten antes de `S2C_REVEAL` y no son los
+del catálogo real.
+
+### D-C04 — Reloj del servidor para la cuenta atrás
+
+**Decisión:** el socket estima el desfase con el `ts` de cada sobre y la mediana
+de los últimos PING/PONG (`session.clockOffset`). Las cuentas atrás se interpolan
+con `session.now()`; el cliente no decide timers ni fases.
+
+**Consecuencias:** la barra de tiempo no salta por la latencia. Cada mensaje se
+deduplica por `id`; al perder la conexión se reintenta con backoff y se encola
+lo pendiente. La reserva de asiento real sigue pendiente en B (no hay mensaje de
+reconexión en el protocolo).
+
+### D-C05 — Adaptador temporal de ids/nombres de A
+
+**Contexto:** `game-core` genera siluetas `s_box`, `s_lamp`… y nombres genéricos
+("Televisor CRT"), mientras el arte de E usa `sil_*`/`obj_*` y 22 objetos.
+
+**Decisión:** `src/game/assetMap.ts` traduce silueta y nombre a arte de E con
+fallback determinista. Vive en el cliente y no toca las reglas.
+
+**Consecuencias:** el cliente ya muestra arte real con el servidor actual. El
+ticket C6 propone que A adopte `assets/catalog.json`; entonces el adaptador se
+borra y el protocolo lleva ids de arte.
+
+### D-C06 — Ruleta: 16 sectores estilizados, resultado del servidor
+
+**Decisión:** la rueda de E es decorativa (16 sectores). El resultado (0–36) y
+los pagos vienen del servidor; el cliente solo elige un sector del color del
+resultado para animar y muestra número, color y delta. El color del número se
+usa únicamente para la animación.
+
+**Consecuencias:** no se duplica la lógica de pagos ni el RNG. Si E pinta una
+ruleta de 37 casillas, se puede mapear el sector exacto sin cambiar el protocolo.
+
+### D-C07 — Director de escenas por fase
+
+**Decisión:** un `Director` escucha los mensajes y cambia entre
+`lobby/garage/reveal/roulette/results` según la fase; las escenas leen el estado
+de `session` al crearse (nada se pierde si un mensaje llega durante el arranque).
+
+**Consecuencias:** no hay lógica de reglas en el cliente y el lobby DOM de D
+puede seguir viviendo por encima del canvas.
+
+---
+
+## Integración de workstreams (main)
+
+### D-INT01 — El cliente activo es el de C; la UI DOM de D queda como referencia
+
+**Contexto:** D y C partieron del mismo `main` y reescribieron el cliente en paralelo.
+D monta lobby/HUD/revelado/ruleta/resultados en DOM sobre un `GameScene` simplificado;
+C monta escenas Phaser (`Boot/Lobby/Garage/Reveal/Roulette/Results`) con el arte de E,
+su propio shell DOM, mock server y escalado entero. Activar ambas capas duplicaría
+lobby, HUD y controles.
+
+**Decisión:** la capa activa es la de C (es el workstream dueño del cliente y la que
+usa los assets reales). La UI de D se conserva en `apps/client/src/ui/*`, con sus tests,
+pero `main.ts` no la monta. Se documenta como ticket **D8** para reconciliar o retirar.
+
+**Consecuencias:** `docs/UI.md` describe una UI que no está cableada en `main`; hay que
+leerla como referencia de diseño. `GameScene.ts` de D tampoco se usa (C usa `GarageScene`).
+
+### D-INT02 — Sesión de reconexión en `sessionStorage`, no `localStorage`
+
+**Contexto:** probando con dos pestañas, la segunda heredaba `tw.session` de la primera
+e intentaba reconectar como el mismo jugador (`ALREADY_JOINED`): `localStorage` se
+comparte por origen.
+
+**Decisión:** `{roomCode, playerId, token}` vive en `sessionStorage` (una sesión por
+pestaña). `tw.nickname` sigue en `localStorage` porque es una preferencia, no identidad.
+
+**Consecuencias:** abrir dos pestañas para jugar 1v1 funciona; recargar una pestaña
+mantiene su asiento. Duplicar una pestaña sí clona la sesión: la segunda recibe
+`ALREADY_JOINED` hasta que la primera se desconecte.
+
+### D-INT03 — Correcciones de #4 conservadas y unificadas
+
+`placeBid` usa la lógica de prórrogas de #4 (una puja dentro de la ventana anti-snipe
+solo reinicia el timer si quedan prórrogas; con el lote expirado se rechaza) y
+`antiSnipeWindowMs` de B como única constante. `spinRoulette` persiste los pagos en
+`state.players` (antes se calculaban y se descartaban) y deriva el resultado de la
+semilla con `rouletteResultFromSeed`. El generador de lotes mantiene la banda de valor
+tras aplicar la pareja trampa ×10. El `room.ts` de B prevalece sobre el de #4/D.
+
+### D-INT04 — Pausa de 4 s tras la ruleta
+
+La sala anuncia el lote siguiente `CONFIG.server.resultPauseMs` después del resultado
+(D-D03), con la subasta ya corriendo. Sin esa pausa, `S2C_ROULETTE_RESULT` y
+`S2C_ROUND_INTRO` llegaban en el mismo tick y el cliente saltaba la animación del giro.

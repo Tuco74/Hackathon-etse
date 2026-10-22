@@ -189,7 +189,33 @@ def build():
         "kernings": [],
     }
     preview = _preview(chars)
-    return atlas, font, preview
+    xml = _xml(font)
+    return atlas, font, preview, xml
+
+
+def _xml(font: dict) -> str:
+    """BMFont XML (Phaser's load.bitmapFont only understands XML)."""
+    common = font["common"]
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        "<font>",
+        f'  <info face="{font["info"]["face"]}" size="{common["lineHeight"]}" bold="0" italic="0" '
+        f'charset="" unicode="1" stretchH="100" smooth="0" aa="1" padding="0,0,0,0" spacing="0,0"/>',
+        f'  <common lineHeight="{common["lineHeight"]}" base="{common["base"]}" scaleW="{common["scaleW"]}" '
+        f'scaleH="{common["scaleH"]}" pages="{common["pages"]}" packed="0"/>',
+        '  <pages>',
+        '    <page id="0" file="font.png"/>',
+        '  </pages>',
+        f'  <chars count="{len(font["chars"])}">',
+    ]
+    for char in font["chars"]:
+        lines.append(
+            f'    <char id="{char["id"]}" x="{char["x"]}" y="{char["y"]}" width="{char["width"]}" '
+            f'height="{char["height"]}" xoffset="{char["xoffset"]}" yoffset="{char["yoffset"]}" '
+            f'xadvance="{char["xadvance"]}" page="0" chnl="15"/>'
+        )
+    lines += ["  </chars>", "</font>", ""]
+    return "\n".join(lines)
 
 
 def _preview(chars):

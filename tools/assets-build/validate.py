@@ -125,7 +125,7 @@ def main():
             fail(f"audio.{name}: volume must be 0..1")
 
     # ---- font coverage ---------------------------------------------------
-    font_data = load(manifest["font"]["data"])
+    font_data = load(manifest["font"].get("json", manifest["font"]["data"]))
     have = {chr(c["id"]) for c in font_data["chars"]}
     needed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,:;!?'\"-+/%()=€&*#@_<>[]{}°~ºª")
     needed |= set("áéíóúüñÁÉÍÓÚÜÑ¡¿")

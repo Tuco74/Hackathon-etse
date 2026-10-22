@@ -1,5 +1,9 @@
 # UI — Trastero Wars (workstream D)
 
+> **Nota de integración (D-INT01):** esta capa DOM se conserva como referencia de
+> diseño, pero en `main` la UI activa es la del cliente de escenas de C
+> (`apps/client/src/scenes/*` + `main.ts`). Ver `docs/DECISIONS.md` y el ticket D8.
+
 Interfaz DOM sobre el canvas de Phaser. El canvas dibuja la escena (trastero y
 siluetas); **todo lo legible y pulsable es HTML**, para que funcione con teclado,
 lector de pantalla y cualquier tamaño de ventana sin reescalar texto.
