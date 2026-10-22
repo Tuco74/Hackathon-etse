@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Asset contract checks:  pnpm assets:validate
 
-Fails (exit 1) when an asset breaks a rule from docs/ART.md or E-arte.md:
+Fails (exit 1) when an asset breaks a rule from docs/ART.md:
 palette closure, atlas/manifest consistency, silhouette ambiguity, catalog
 shape, client-side value leaks, audio and font coverage.
 """
