@@ -106,6 +106,14 @@ canvas {
 }
 #error { align-self: center; min-height: 18px; color: #ff8b86; font-size: 13px; text-align: center; }
 #actions { display: flex; gap: 10px; justify-content: center; pointer-events: auto; flex-wrap: wrap; }
+.roulette-info {
+  align-self: center;
+  padding: 8px 12px;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--ink);
+  text-transform: uppercase;
+}
 .hidden { display: none !important; }
 
 /* accessible announce region: state is also readable by screen readers */

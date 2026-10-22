@@ -60,6 +60,10 @@ Cada ticket indica dueño, ficheros que toca y Definition of Done.
   `sha256(seed)` en el test de partida completa.
 - [x] **B8** Reloj monótono inyectado (`clock.ts`), logs JSON por sala (`log.ts`) sin
   secretos y apagado limpio con SIGINT/SIGTERM.
+- [x] **B9** Ruleta interactiva: `C2S_ROULETTE_PASS`/`C2S_ROULETTE_SPIN`, snapshot con
+  `bets/passed/readyToSpin`, giro bloqueado hasta que todos deciden (`SPIN_NOT_READY`),
+  auto-pass al desconectarse, pausa de 4 s y continuación a la ronda siguiente. Test de
+  integración del flujo apuesta → pase → giro → resultado → ronda 6.
 
 ## Workstream C — cliente (`apps/client`)
 
@@ -78,6 +82,9 @@ Cada ticket indica dueño, ficheros que toca y Definition of Done.
 - [x] **C7** Integración con el netcode de B: `S2C_JOINED` como fuente de identidad,
   `C2S_RECONNECT` con token en `sessionStorage` (una sesión por pestaña), backoff y
   manejo de `SEAT_EXPIRED`/`RECONNECT_FAILED`. Mock sigue usando el heurístico de apodo.
+- [x] **C8** Panel de ruleta accionable: cantidad + color, `Pasar`, `Girar ahora`
+  (deshabilitado con motivo hasta `readyToSpin`), confirmación de apuesta, errores
+  visibles y limpieza al pasar de fase. Verificado en mock y contra el servidor.
 
 ## Workstream D — UI/UX
 

@@ -125,10 +125,12 @@ function setPhaseStatus(msg: S2CMessage): void {
       statusEl.textContent = "Revelado";
       break;
     case "S2C_ROULETTE_PHASE":
-      statusEl.textContent = "Ruleta: elige color y cantidad";
+      statusEl.textContent = msg.readyToSpin
+        ? "Ruleta: todos listos · pulsa Girar"
+        : `Ruleta: ${msg.bets.length + msg.passed.length}/${msg.players.length} decididos`;
       break;
     case "S2C_ROULETTE_RESULT":
-      statusEl.textContent = `Ruleta: ${msg.result}`;
+      statusEl.textContent = `Resultado de la ruleta: ${msg.result}`;
       break;
     case "S2C_GAME_OVER":
       statusEl.textContent = "Fin de la partida";
@@ -153,22 +155,63 @@ function buildLobbyActions(): void {
   actionsEl.replaceChildren(readyBtn, startBtn);
 }
 
+const ROULETTE_LABEL: Record<"red" | "black" | "green", string> = {
+  red: "ROJO",
+  black: "NEGRO",
+  green: "VERDE 0",
+};
+
+function clearRouletteActions(): void {
+  if (actionsEl.dataset.mode !== "roulette") return;
+  actionsEl.replaceChildren();
+  delete actionsEl.dataset.mode;
+}
+
+/**
+ * Roulette panel. It is re-rendered on every S2C_ROULETTE_PHASE snapshot, so
+ * each player sees who has already bet/passed and the "Girar" button unlocks
+ * as soon as everyone has decided. The server still auto-spins at the deadline.
+ */
 function buildRouletteActions(): void {
-  actionsEl.innerHTML = "";
-  actionsEl.dataset.mode = "roulette";
+  const phase = session.roulettePhase;
+  if (!phase) return;
+
   const moneyNow = session.money();
-  const options = [10, 50, 100, Math.floor(moneyNow / 2), moneyNow].filter(
-    (value, index, list) => value >= 10 && value <= moneyNow && list.indexOf(value) === index,
-  );
+  const myBet = phase.bets.find((bet) => bet.playerId === session.playerId);
+  const iPassed = phase.passed.includes(session.playerId);
+  const decided = myBet !== undefined || iPassed;
+
+  const options = [
+    ...new Set([10, 50, 100, Math.floor(moneyNow / 2), moneyNow].filter(
+      (value) => value >= 10 && value <= moneyNow,
+    )),
+  ];
   if (options.length === 0) options.push(10);
   if (!options.includes(betAmount)) betAmount = options[0] ?? 10;
 
+  actionsEl.dataset.mode = "roulette";
+  actionsEl.replaceChildren();
+
+  const info = document.createElement("span");
+  info.className = "roulette-info";
+  if (myBet) {
+    info.textContent = `Tu apuesta: ${myBet.amount} € a ${ROULETTE_LABEL[myBet.choice]}`;
+  } else if (iPassed) {
+    info.textContent = "Has pasado esta ruleta";
+  } else if (moneyNow < 10) {
+    info.textContent = "Sin saldo: pulsa Pasar";
+  } else {
+    info.textContent = "Elige color y cantidad";
+  }
+  actionsEl.append(info);
+
   const amounts = document.createElement("button");
   amounts.textContent = `Apuesta: ${betAmount} €`;
+  amounts.disabled = decided || moneyNow < 10;
   amounts.onclick = () => {
     const index = options.indexOf(betAmount);
     betAmount = options[(index + 1) % options.length] ?? 10;
-    amounts.textContent = `Apuesta: ${betAmount} €`;
+    buildRouletteActions();
   };
   actionsEl.append(amounts);
 
@@ -176,12 +219,37 @@ function buildRouletteActions(): void {
     const button = document.createElement("button");
     button.textContent =
       choice === "red" ? "Rojo 1:1" : choice === "black" ? "Negro 1:1" : "Verde 35:1";
+    button.disabled = decided || moneyNow < betAmount;
     button.onclick = () => {
+      button.disabled = true;
+      info.textContent = "Enviando apuesta…";
       socket.send({ type: "C2S_ROULETTE_BET", choice, amount: betAmount });
-      actionsEl.replaceChildren();
     };
     actionsEl.append(button);
   }
+
+  const pass = document.createElement("button");
+  pass.textContent = "Pasar";
+  pass.disabled = decided;
+  pass.onclick = () => {
+    pass.disabled = true;
+    info.textContent = "Pasando…";
+    socket.send({ type: "C2S_ROULETTE_PASS" });
+  };
+  actionsEl.append(pass);
+
+  const spin = document.createElement("button");
+  spin.textContent = phase.readyToSpin ? "Girar ahora" : "Girar (esperando…)";
+  spin.disabled = !phase.readyToSpin;
+  spin.title = phase.readyToSpin
+    ? "Todos han apostado o pasado: lanza la ruleta"
+    : "Espera a que todos apuesten o pasen";
+  spin.onclick = () => {
+    spin.disabled = true;
+    spin.textContent = "Girando…";
+    socket.send({ type: "C2S_ROULETTE_SPIN" });
+  };
+  actionsEl.append(spin);
 }
 
 function onRoomState(msg: Extract<S2CMessage, { type: "S2C_ROOM_STATE" }>): void {
@@ -318,12 +386,29 @@ socket.on((msg) => {
       hud.classList.add("hidden");
       joinBtn.disabled = false;
     }
+
+    // Re-render the roulette panel so a rejected spin/bet doesn't leave it locked.
+    if (
+      actionsEl.dataset.mode === "roulette" &&
+      ["SPIN_NOT_READY", "BET_TOO_LOW", "BET_TOO_HIGH", "ALREADY_BET", "ALREADY_PASSED", "PHASE_INVALID"].includes(msg.code)
+    ) {
+      buildRouletteActions();
+    }
     return;
   }
 
   if (msg.type === "S2C_ROOM_STATE") onRoomState(msg);
   if (msg.type === "S2C_ROULETTE_PHASE") buildRouletteActions();
+  if (msg.type === "S2C_ROULETTE_RESULT") clearRouletteActions();
+  if (
+    msg.type === "S2C_ROUND_INTRO" ||
+    msg.type === "S2C_AUCTION_STATE" ||
+    msg.type === "S2C_REVEAL"
+  ) {
+    clearRouletteActions();
+  }
   if (msg.type === "S2C_GAME_OVER") {
+    clearRouletteActions();
     actionsEl.innerHTML = "";
     const again = document.createElement("button");
     again.textContent = "Ver sala";

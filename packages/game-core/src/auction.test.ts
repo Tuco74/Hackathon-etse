@@ -174,6 +174,7 @@ describe("roulette", () => {
       roulette: {
         round: 5, seed: "seed_123", windowEndsAt: 0,
         bets: [{ playerId: "a", choice: "red", amount: 10 }],
+        passed: [],
         spun: false, result: null, payouts: [],
       },
     };

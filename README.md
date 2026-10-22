@@ -54,6 +54,13 @@ cliente envía `C2S_RECONNECT` y recupera el mismo asiento durante **45 s**, con
 snapshot de la fase actual (subasta incluida). Pasado ese plazo el asiento se libera y
 el servidor responde `SEAT_EXPIRED`.
 
+### Ruleta
+
+Tras las rondas **5, 10 y 15** se abre la ruleta. Elige cantidad y color, o pulsa
+*Pasar*; cuando todos los jugadores han decidido se habilita **Girar ahora**. Si nadie
+lo pulsa, el servidor gira sola al agotar la ventana de 20 s. El resultado y los pagos
+llegan del servidor y la partida continúa en la ronda siguiente.
+
 ## Comandos
 
 | Comando | Qué hace |

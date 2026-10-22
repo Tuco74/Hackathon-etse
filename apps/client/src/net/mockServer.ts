@@ -101,6 +101,30 @@ export function createMockServer(
   let lotsWon = new Map<string, number>();
   let lotValueWon = new Map<string, number>();
   let bets = new Map<string, { choice: "red" | "black" | "green"; amount: number }>();
+  let passed = new Set<string>();
+  let rouletteCommit = "";
+  let rouletteEnd = 0;
+  let rouletteSpun = false;
+
+  const readyToSpin = (): boolean =>
+    phase === "ROULETTE" &&
+    players.filter((p) => p.connected).every((p) => bets.has(p.id) || passed.has(p.id));
+
+  const emitRoulettePhase = (): void => {
+    emit({
+      type: "S2C_ROULETTE_PHASE",
+      hashSeed: rouletteCommit,
+      windowSec: Math.max(0, Math.ceil((rouletteEnd - Date.now()) / 1000)),
+      players: players.map((p) => ({ id: p.id, money: p.money })),
+      bets: [...bets.entries()].map(([playerId, bet]) => ({
+        playerId,
+        choice: bet.choice,
+        amount: bet.amount,
+      })),
+      passed: [...passed],
+      readyToSpin: readyToSpin(),
+    });
+  };
 
   const later = (ms: number, fn: () => void): void => {
     const id = window.setTimeout(() => {
@@ -253,18 +277,25 @@ export function createMockServer(
   const startRoulette = (): void => {
     phase = "ROULETTE";
     bets = new Map();
-    emit({
-      type: "S2C_ROULETTE_PHASE",
-      hashSeed: hex(32),
-      windowSec: Math.ceil(ROULETTE_WINDOW_MS / 1000),
-      players: players.map((p) => ({ id: p.id, money: p.money })),
-    });
+    passed = new Set();
+    rouletteSpun = false;
+    rouletteCommit = hex(32);
+    rouletteEnd = Date.now() + ROULETTE_WINDOW_MS;
+    emitRoulettePhase();
     roomState();
+    // bots decide quickly so the demo can spin without waiting the full window
+    later(900, () => {
+      if (phase !== "ROULETTE") return;
+      if (moneyOf(BOTS[0]) >= 10) bets.set(BOTS[0], { choice: "red", amount: 10 });
+      passed.add(BOTS[1]);
+      emitRoulettePhase();
+    });
     later(ROULETTE_WINDOW_MS, spin);
   };
 
   const spin = (): void => {
-    if (phase !== "ROULETTE") return;
+    if (phase !== "ROULETTE" || rouletteSpun) return;
+    rouletteSpun = true;
     const result = Math.floor(Math.random() * 37);
     const colour = rouletteColour(result);
     const payouts = players.map((p) => {
@@ -389,7 +420,36 @@ export function createMockServer(
           return;
         }
         bets.set(YOU, { choice: msg.choice, amount: msg.amount });
-        roomState();
+        emitRoulettePhase();
+        break;
+      }
+      case "C2S_ROULETTE_PASS": {
+        if (phase !== "ROULETTE") {
+          error("PHASE_INVALID", "La ruleta no está abierta");
+          return;
+        }
+        if (bets.has(YOU)) {
+          error("ALREADY_BET", "Ya has apostado esta ronda");
+          return;
+        }
+        if (passed.has(YOU)) {
+          error("ALREADY_PASSED", "Ya has pasado esta ronda");
+          return;
+        }
+        passed.add(YOU);
+        emitRoulettePhase();
+        break;
+      }
+      case "C2S_ROULETTE_SPIN": {
+        if (phase !== "ROULETTE") {
+          error("PHASE_INVALID", "La ruleta no está abierta");
+          return;
+        }
+        if (!readyToSpin()) {
+          error("SPIN_NOT_READY", "Faltan jugadores por apostar o pasar");
+          return;
+        }
+        spin();
         break;
       }
       case "C2S_PING": {

@@ -95,6 +95,8 @@ export const ErrorCode = z.enum([
   "NAME_TAKEN",
   "ALREADY_JOINED",
   "GAME_ALREADY_STARTED",
+  "ALREADY_PASSED",
+  "SPIN_NOT_READY",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 
@@ -110,17 +112,20 @@ export const C2S_SET_READY = z.object({ type: z.literal("C2S_SET_READY"), ready:
 export const C2S_START_GAME = z.object({ type: z.literal("C2S_START_GAME") });
 export const C2S_BID = z.object({ type: z.literal("C2S_BID"), amount: z.number().int().positive() });
 export const C2S_ROULETTE_BET = z.object({ type: z.literal("C2S_ROULETTE_BET"), choice: z.enum(["red", "black", "green"]), amount: z.number().int().positive() });
+export const C2S_ROULETTE_PASS = z.object({ type: z.literal("C2S_ROULETTE_PASS") });
+export const C2S_ROULETTE_SPIN = z.object({ type: z.literal("C2S_ROULETTE_SPIN") });
 export const C2S_EMOTE = z.object({ type: z.literal("C2S_EMOTE"), emoteId: z.number().int().min(0).max(5) });
 export const C2S_PING = z.object({ type: z.literal("C2S_PING"), clientTs: z.number().int() });
 
 export const C2SMessage = z.discriminatedUnion("type", [
-  C2S_JOIN, C2S_RECONNECT, C2S_SET_READY, C2S_START_GAME, C2S_BID, C2S_ROULETTE_BET, C2S_EMOTE, C2S_PING,
+  C2S_JOIN, C2S_RECONNECT, C2S_SET_READY, C2S_START_GAME, C2S_BID,
+  C2S_ROULETTE_BET, C2S_ROULETTE_PASS, C2S_ROULETTE_SPIN, C2S_EMOTE, C2S_PING,
 ]);
 export type C2SMessage = z.infer<typeof C2SMessage>;
 
 export const C2S_TYPES: ReadonlySet<string> = new Set([
-  "C2S_JOIN", "C2S_RECONNECT", "C2S_SET_READY", "C2S_START_GAME",
-  "C2S_BID", "C2S_ROULETTE_BET", "C2S_EMOTE", "C2S_PING",
+  "C2S_JOIN", "C2S_RECONNECT", "C2S_SET_READY", "C2S_START_GAME", "C2S_BID",
+  "C2S_ROULETTE_BET", "C2S_ROULETTE_PASS", "C2S_ROULETTE_SPIN", "C2S_EMOTE", "C2S_PING",
 ]);
 
 // ---------- S2C messages ----------
@@ -172,6 +177,14 @@ export const S2C_ROULETTE_PHASE = z.object({
   hashSeed: z.string(),
   windowSec: z.number().int(),
   players: z.array(z.object({ id: z.string(), money: z.number().int() })),
+  bets: z.array(z.object({
+    playerId: z.string(),
+    choice: z.enum(["red", "black", "green"]),
+    amount: z.number().int(),
+  })),
+  passed: z.array(z.string()),
+  /** true when every connected player has already bet or passed */
+  readyToSpin: z.boolean(),
 });
 export const S2C_ROULETTE_RESULT = z.object({
   type: z.literal("S2C_ROULETTE_RESULT"),

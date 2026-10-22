@@ -52,6 +52,7 @@ export interface RoulettePhase {
   seed: string | null; // secret until the spin; server publishes sha256(seed) at phase start
   windowEndsAt: number;
   bets: RouletteBet[];
+  passed: string[];
   spun: boolean;
   result: number | null; // 0-36
   payouts: { playerId: string; delta: number; money: number }[];
