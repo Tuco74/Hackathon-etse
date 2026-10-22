@@ -24,6 +24,8 @@ interface Conn {
 const TICK_MS = 200;
 const REVEAL_MS = 6000;
 const INTRO_MS = 3000;
+// The roulette result needs a beat on screen before the next lot is announced.
+const RESULT_PAUSE_MS = 4000;
 
 export function seededRng(seed: number): Rng {
   let x = seed >>> 0 || 1;
@@ -40,6 +42,7 @@ export class Room {
   private rng: Rng;
   private timer: NodeJS.Timeout | null = null;
   private phaseDeadline = 0;
+  private pendingIntroDeadline = 0;
   private gameOverAnnounced = false;
   private readonly totalRounds: number;
 
@@ -216,6 +219,20 @@ export class Room {
         // spinRoulette already advanced the match (next round or GAME_OVER)
         this.broadcastRouletteResult();
         this.phaseDeadline = now + REVEAL_MS;
+        // The next round exists already, but its lot was never announced:
+        // without this, players bid blind after every roulette. Announce it
+        // once the result has been on screen for a moment.
+        if (this.state.phase !== "GAME_OVER") {
+          this.pendingIntroDeadline = now + RESULT_PAUSE_MS;
+        }
+      }
+      if (
+        this.pendingIntroDeadline > 0 &&
+        now >= this.pendingIntroDeadline &&
+        this.state.phase === "AUCTION"
+      ) {
+        this.pendingIntroDeadline = 0;
+        this.beginIntro();
       }
       this.announceGameOverIfNeeded();
     } else if (this.state.phase === "REVEAL" && this.phaseDeadline && now >= this.phaseDeadline) {
