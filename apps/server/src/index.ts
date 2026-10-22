@@ -38,8 +38,20 @@ function getRoom(code: string): Room {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
   if (url.pathname === "/healthz") {
+    // Operational snapshot: phase/round/players only, never lot values.
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: true, rooms: rooms.size }));
+    res.end(
+      JSON.stringify({
+        ok: true,
+        rooms: rooms.size,
+        detail: [...rooms.values()].map((r) => ({
+          code: r.code,
+          phase: r.phase,
+          players: r.playerCount,
+          state: r.describe(),
+        })),
+      }),
+    );
     return;
   }
 

@@ -40,6 +40,7 @@ export class Room {
   private rng: Rng;
   private timer: NodeJS.Timeout | null = null;
   private phaseDeadline = 0;
+  private gameOverAnnounced = false;
   private readonly totalRounds: number;
 
   constructor(code: string, totalRounds: number = CONFIG.match.rounds) {
@@ -212,26 +213,44 @@ export class Room {
         this.broadcastReveal();
         this.phaseDeadline = now + REVEAL_MS;
       } else if (before === "ROULETTE" && this.state.phase !== "ROULETTE") {
+        // spinRoulette already advanced the match (next round or GAME_OVER)
         this.broadcastRouletteResult();
         this.phaseDeadline = now + REVEAL_MS;
       }
+      this.announceGameOverIfNeeded();
     } else if (this.state.phase === "REVEAL" && this.phaseDeadline && now >= this.phaseDeadline) {
       this.phaseDeadline = 0;
       this.state = afterReveal(this.state, this.rng, () => Date.now());
-      if (this.state.phase === "GAME_OVER") {
-        this.broadcastGameOver();
-      } else if (this.state.phase === "ROULETTE") {
+      if (this.state.phase === "ROULETTE") {
         this.broadcastRoulettePhase();
         const rp = this.state.roulette;
         if (rp) this.phaseDeadline = rp.windowEndsAt;
-      } else {
+      } else if (this.state.phase !== "GAME_OVER") {
         this.beginIntro();
       }
+      this.announceGameOverIfNeeded();
     } else if (this.state.phase === "ROUND_INTRO" && this.phaseDeadline && now >= this.phaseDeadline) {
       this.phaseDeadline = 0;
       this.broadcastRoomState();
       this.broadcastAuctionState();
     }
+  }
+
+  private announceGameOverIfNeeded(): void {
+    if (this.state.phase === "GAME_OVER" && !this.gameOverAnnounced) {
+      this.gameOverAnnounced = true;
+      this.broadcastGameOver();
+    }
+  }
+
+  /** Operational snapshot for /healthz. Never includes lot values. */
+  describe(): { round: number; totalRounds: number; phase: GamePhase; money: Record<string, number> } {
+    return {
+      round: this.state.round,
+      totalRounds: this.state.totalRounds,
+      phase: this.state.phase,
+      money: Object.fromEntries(this.state.players.map((p) => [p.nickname, p.money])),
+    };
   }
 
   private beginIntro(): void {
