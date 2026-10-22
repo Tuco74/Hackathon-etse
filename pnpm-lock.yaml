@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       '@vitest/coverage-v8':
-        specifier: 2.1.9
+        specifier: ^2.1.9
         version: 2.1.9(vitest@2.1.9(@types/node@26.6.5)(lightningcss@1.33.0))
       turbo:
         specifier: ^2.3.0
