@@ -95,30 +95,28 @@ export function categoryLabel(category: string): string {
 export interface BidOption {
   readonly amount: number;
   readonly label: string;
-  readonly kind: "primary" | "plus" | "max";
+  readonly kind: "primary" | "plus";
 }
 
+/** Steps requested for the auction bar: three buttons that add to the bid. */
+export const BID_DELTAS = [10, 25, 50] as const;
+
 /**
- * Ladder of quick bids, derived from the server's minimum next bid.
- * Amounts above the player's cash are still rendered (disabled + reason)
- * so the player understands why they cannot press them.
+ * Three quick bids relative to the current bid. With no bids yet (0 €) they
+ * open at 10/25/50 €; with a 100 € bid they offer 110/125/150 €.
+ * Amounts above the player's cash are still rendered (disabled + reason) so
+ * the player understands why they cannot press them.
  */
-export function bidOptions(minNextBid: number, cash: number, increment: number): BidOption[] {
-  const base = Math.max(0, Math.round(minNextBid));
-  // `base` is already the server minimum (current + increment). The extra
-  // buttons are the absolute +25/+50 steps requested by the auction UI.
-  const step25 = base + Math.max(0, 25 - increment);
-  const step50 = base + Math.max(0, 50 - increment);
-  const options: BidOption[] = [
-    { amount: base, label: base > 0 ? `Pujar ${money(base)}` : "Abrir con 10 €", kind: "primary" },
-    { amount: step25, label: "+25 €", kind: "plus" },
-    { amount: step50, label: "+50 €", kind: "plus" },
-  ];
-  const max = Math.max(0, Math.round(cash));
-  if (max >= base) {
-    options.push({ amount: max, label: `Todo (${money(max)})`, kind: "max" });
-  }
-  return options;
+export function bidOptions(
+  currentBid: number,
+  deltas: readonly number[] = BID_DELTAS,
+): BidOption[] {
+  const base = Math.max(0, Math.round(currentBid));
+  return deltas.map((delta, index) => ({
+    amount: base + delta,
+    label: `+${money(delta)}`,
+    kind: index === 0 ? "primary" : "plus",
+  }));
 }
 
 export interface BidGate {

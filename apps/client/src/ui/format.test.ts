@@ -50,15 +50,14 @@ describe("seconds", () => {
 });
 
 describe("bidOptions", () => {
-  it("builds the ladder from the server minimum", () => {
-    const options = bidOptions(250, 1000, CONFIG.auction.minIncrement);
-    expect(options.map((o) => o.amount)).toEqual([250, 265, 290, 1000]);
-    expect(options[3]?.kind).toBe("max");
+  it("adds the three requested steps to the current bid", () => {
+    const options = bidOptions(250);
+    expect(options.map((o) => o.amount)).toEqual([260, 275, 300]);
+    expect(options.map((o) => o.label)).toEqual(["+10 €", "+25 €", "+50 €"]);
   });
 
-  it("does not offer an all-in below the minimum bid", () => {
-    const options = bidOptions(500, 100, 25);
-    expect(options.some((o) => o.kind === "max")).toBe(false);
+  it("opens at 10/25/50 when nobody has bid yet", () => {
+    expect(bidOptions(0).map((o) => o.amount)).toEqual([10, 25, 50]);
   });
 });
 

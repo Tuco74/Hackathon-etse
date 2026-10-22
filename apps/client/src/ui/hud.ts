@@ -99,8 +99,6 @@ export class Hud {
     const primary = makeButton("primary");
     const plus1 = makeButton("plus");
     const plus2 = makeButton("plus");
-    const max = makeButton("max");
-    max.addEventListener("click", () => this.options.onMaxBid());
 
     this.panel = el(
       "section",
@@ -110,11 +108,11 @@ export class Hud {
       el(
         "div",
         { cls: "bid__figures" },
-        el("div", { cls: "bid__figure" }, el("span", { cls: "eyebrow", text: "Mejor puja" }), this.currentEl, this.bidderEl),
+        el("div", { cls: "bid__figure" }, el("span", { cls: "eyebrow", text: "Puja actual" }), this.currentEl, this.bidderEl),
         el("div", { cls: "bid__figure bid__figure--next" }, el("span", { cls: "eyebrow", text: "Siguiente mínima" }), this.nextEl),
       ),
       this.statusEl,
-      el("div", { cls: "bid__actions" }, primary, plus1, plus2, max),
+      el("div", { cls: "bid__actions" }, primary, plus1, plus2),
       this.whyEl,
       el("p", {
         cls: "bid__keys",
@@ -263,23 +261,12 @@ export class Hud {
 
   private renderBid(state: UiState): void {
     const auction = state.auction;
-    const options = bidOptions(
-      auction?.minNextBid ?? CONFIG.auction.minBid,
-      cash(state),
-      CONFIG.auction.minIncrement,
-    );
-
-    // Amounts shown next to the buttons.
-    const labels = [
-      options[0]?.label ?? "Pujar",
-      options[1]?.label ?? "+25 €",
-      options[2]?.label ?? "+50 €",
-      `Todo (${money(cash(state))})`,
-    ];
+    // Three buttons that add to the current bid (0 € before the first bid).
+    const options = bidOptions(auction?.currentBid ?? 0);
     this.buttons.forEach((button, index) => {
-      const amount = options[index]?.amount;
-      setText(button, labels[index] ?? "—");
-      if (amount !== undefined) button.dataset.amount = String(amount);
+      const option = options[index];
+      setText(button, option?.label ?? "—");
+      if (option) button.dataset.amount = String(option.amount);
       else delete button.dataset.amount;
     });
 
@@ -298,7 +285,6 @@ export class Hud {
     const whileAuction = state.phase === "AUCTION";
     this.buttons.forEach((button, index) => {
       const amount = options[index]?.amount;
-      const isMax = index === 3;
       const reason = amount === undefined
         ? "no disponible"
         : bidDisabledReason({
@@ -309,8 +295,7 @@ export class Hud {
             amount,
           });
       button.disabled = !whileAuction || reason !== null;
-      button.title = reason ?? (isMax ? "Pujar todo tu dinero" : `Pujar ${money(amount ?? 0)}`);
-      if (index === 3) button.disabled = button.disabled || cash(state) < auction.minNextBid;
+      button.title = reason ?? `Pujar ${money(amount ?? 0)}`;
     });
 
     const mainReason = whileAuction
@@ -394,10 +379,6 @@ export class Hud {
   bidByIndex(index: number): void {
     const button = this.buttons[index];
     if (!button || button.disabled) return;
-    if (index === 3) {
-      this.options.onMaxBid();
-      return;
-    }
     const amount = Number(button.dataset.amount ?? "");
     if (Number.isFinite(amount) && amount > 0) this.options.onBid(amount);
   }
