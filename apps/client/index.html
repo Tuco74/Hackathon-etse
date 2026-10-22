@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trastero Wars</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="game"></div>
+
+    <div id="lobby" class="overlay">
+      <h1>TRASTERO WARS</h1>
+      <p class="sub">Subastas de trasteros · 2–5 jugadores</p>
+      <label>Apodo <input id="nickname" maxlength="16" value="" placeholder="Tu apodo" /></label>
+      <label>Código de sala <input id="roomCode" maxlength="6" value="ABCD" /></label>
+      <button id="joinBtn">Entrar</button>
+      <p id="lobbyMsg" class="msg"></p>
+    </div>
+
+    <div id="hud" class="hidden">
+      <div id="players"></div>
+      <div id="status"></div>
+      <div id="error" role="alert"></div>
+      <div id="actions"></div>
+    </div>
+
+    <div id="a11y" class="sr-only" role="status" aria-live="polite"></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

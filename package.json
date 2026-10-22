@@ -1,10 +1,33 @@
 {
   "name": "trastero-wars",
   "private": true,
+  "type": "module",
   "version": "0.1.0",
-  "packageManager": "pnpm@9.12.0",
+  "description": "Trastero Wars - juego web multijugador de subastas de trasteros",
   "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "build:packages": "pnpm --filter @trastero/shared --filter @trastero/game-core exec tsc -b",
+    "start": "pnpm --filter @trastero/server run start",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:leak": "node tools/check-leak.mjs",
+    "test:smoke": "node tools/smoke.mjs",
+    "sim:balance": "node tools/balance-sim/src/sim.js",
     "assets:build": "python3 tools/assets-build/build.py",
     "assets:validate": "python3 tools/assets-build/validate.py"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "2.1.9",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "ws": "^8.22.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
   }
 }

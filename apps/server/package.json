@@ -1,0 +1,26 @@
+{
+  "name": "@trastero/server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "echo \"server runs via tsx\"",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo ok",
+    "test": "echo ok"
+  },
+  "dependencies": {
+    "@trastero/game-core": "workspace:*",
+    "@trastero/shared": "workspace:*",
+    "ws": "^8.22.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.5.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.0"
+  }
+}

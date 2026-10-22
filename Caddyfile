@@ -1,0 +1,5 @@
+# Sustituye example.com por tu dominio. Caddy gestiona el TLS automáticamente.
+example.com {
+	encode zstd gzip
+	reverse_proxy app:2567
+}

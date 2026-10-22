@@ -1,0 +1,15 @@
+{
+  "name": "@trastero/balance-sim",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "run": "node src/sim.js",
+    "typecheck": "echo ok",
+    "lint": "echo ok",
+    "test": "echo ok"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

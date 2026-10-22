@@ -1,108 +1,175 @@
-# DECISIONS
+﻿# DECISIONS
 
-Registro de decisiones. Cada workstream añade entradas con prefijo.
-Formato: `D-<ws><n> — título`, contexto, decisión, consecuencias.
+Registro de decisiones. Cada workstream a├▒ade entradas con prefijo.
+Formato: `D-<ws><n> ÔÇö t├¡tulo`, contexto, decisi├│n, consecuencias.
 
-## E — Arte, contenido y audio
+## E ÔÇö Arte, contenido y audio
 
-### D-E01 — Fuentes de arte en código, no `.aseprite` binario
+### D-E01 ÔÇö Fuentes de arte en c├│digo, no `.aseprite` binario
 
-**Contexto:** §1.3 pide fuentes `.aseprite`/`.psd` en `assets/src` y export
+**Contexto:** ┬º1.3 pide fuentes `.aseprite`/`.psd` en `assets/src` y export
 reproducible. En este repo no hay Fase 0 ni pipeline de Aseprite, y un binario
 no se puede revisar en un PR de hackathon.
 
-**Decisión:** la fuente autoritativa son módulos Python legibles
-(`tools/assets-build/art/*.py`) con geometría por primitivas y roles de paleta.
-El build exporta a `assets/src/objects/<id>.png` + `<id>.roles.json` (rol → hex),
+**Decisi├│n:** la fuente autoritativa son m├│dulos Python legibles
+(`tools/assets-build/art/*.py`) con geometr├¡a por primitivas y roles de paleta.
+El build exporta a `assets/src/objects/<id>.png` + `<id>.roles.json` (rol ÔåÆ hex),
 que se abren en Aseprite para retoques puntuales, y hojas de contacto.
 
 **Consecuencias:** el arte es diffeable y determinista; el retoque manual debe
-volver al código. Si el equipo quiere edición intensiva en Aseprite, se pueden
+volver al c├│digo. Si el equipo quiere edici├│n intensiva en Aseprite, se pueden
 sustituir los PNG fuente sin cambiar el manifiesto ni el cliente.
 
-### D-E02 — Build de assets en Python + Pillow, invocado desde pnpm
+### D-E02 ÔÇö Build de assets en Python + Pillow, invocado desde pnpm
 
-**Contexto:** el monorepo es Node/pnpm, pero la máquina de trabajo no tiene Node
+**Contexto:** el monorepo es Node/pnpm, pero la m├íquina de trabajo no tiene Node
 instalado y el arte no necesita el runtime del juego.
 
-**Decisión:** `pnpm assets:build` ejecuta `python3 tools/assets-build/build.py`
-(única dependencia: Pillow, ver `requirements.txt`). `pnpm assets:validate`
+**Decisi├│n:** `pnpm assets:build` ejecuta `python3 tools/assets-build/build.py`
+(├║nica dependencia: Pillow, ver `requirements.txt`). `pnpm assets:validate`
 ejecuta las comprobaciones de contrato.
 
 **Consecuencias:** CI necesita Python 3 + Pillow solo para el job de assets; el
 cliente consume PNG/JSON ya generados y commiteados. Si A prefiere Node puro, el
 script se puede portar sin tocar los assets.
 
-### D-E03 — Root `package.json` mínimo (stub para A)
+### D-E03 ÔÇö Root `package.json` m├¡nimo (stub para A)
 
 **Contexto:** no existe scaffold de Fase 0; `pnpm assets:build` debe funcionar ya.
 
-**Decisión:** se añade un `package.json` raíz **solo** con `name`, `private`,
+**Decisi├│n:** se a├▒ade un `package.json` ra├¡z **solo** con `name`, `private`,
 `packageManager` y los scripts `assets:*`. No declara dependencias ni workspaces.
 
 **Consecuencias:** A debe fusionar sus scripts/dependencias en este fichero, no
 reemplazarlo a ciegas. No interfiere con `pnpm install && pnpm test` porque no
 hay dependencias.
 
-### D-E04 — Silueta derivada del alfa, 2 tonos + contorno
+### D-E04 ÔÇö Silueta derivada del alfa, 2 tonos + contorno
 
-**Decisión:** cada silueta se genera desde el canal alfa del sprite
+**Decisi├│n:** cada silueta se genera desde el canal alfa del sprite
 (`Canvas.silhouette()`), relleno plano `#4a4459` + sombra `#2f2a3c` en borde
-inferior/derecho + contorno `ink`. Idéntico para los 22 objetos.
+inferior/derecho + contorno `ink`. Id├®ntico para los 22 objetos.
 
 **Consecuencias:** imposible filtrar valor por color, detalle o contraste; las
-parejas trampa son pixel-idénticas en la vista previa. `validate.py` comprueba
+parejas trampa son pixel-id├®nticas en la vista previa. `validate.py` comprueba
 que la paleta de siluetas es exactamente esa terna.
 
-### D-E05 — 22 objetos, 24×24, 8 categorías, 9 parejas trampa
+### D-E05 ÔÇö 22 objetos, 24├ù24, 8 categor├¡as, 9 parejas trampa
 
-**Decisión:** catálogo de 22 objetos (rango pedido 20–30), 13 siluetas únicas,
-ancla bottom-center `(0.5, 1.0)`, tamaño de lienzo 24×24. 9 parejas comparten
-geometría y difieren ≥ 10× en valor. Objetos "gancho" marcados con `hook: true`.
+**Decisi├│n:** cat├ílogo de 22 objetos (rango pedido 20ÔÇô30), 13 siluetas ├║nicas,
+ancla bottom-center `(0.5, 1.0)`, tama├▒o de lienzo 24├ù24. 9 parejas comparten
+geometr├¡a y difieren ÔëÑ 10├ù en valor. Objetos "gancho" marcados con `hook: true`.
 
 **Consecuencias:** el generador de A dispone de piezas suficientes para las tres
 bandas de valor; cualquier objeto nuevo debe pasar `pnpm assets:validate`.
 
-### D-E06 — Catálogo público y privado separados
+### D-E06 ÔÇö Cat├ílogo p├║blico y privado separados
 
 **Contexto:** regla anti-fuga: el cliente no puede recibir valores antes del
 revelado.
 
-**Decisión:** `assets/catalog.json` (privado, con `value`, `rarity`, `hook`) es
-para servidor/game-core. `assets/catalog.public.json` (id, categoría, silueta,
-hints) es lo único enlazado desde `manifest.json`. `validate.py` falla si el
-manifiesto contiene claves `value`/`trueValue` o si apunta al catálogo privado.
+**Decisi├│n:** `assets/catalog.json` (privado, con `value`, `rarity`, `hook`) es
+para servidor/game-core. `assets/catalog.public.json` (id, categor├¡a, silueta,
+hints) es lo ├║nico enlazado desde `manifest.json`. `validate.py` falla si el
+manifiesto contiene claves `value`/`trueValue` o si apunta al cat├ílogo privado.
 
-**Consecuencias:** el cliente puede precargar metadatos públicos sin riesgo. Los
+**Consecuencias:** el cliente puede precargar metadatos p├║blicos sin riesgo. Los
 `hints` son ambiguos y nunca mencionan precio ni rareza.
 
-### D-E07 — Audio WAV mono 22,05 kHz generado por síntesis
+### D-E07 ÔÇö Audio WAV mono 22,05 kHz generado por s├¡ntesis
 
-**Decisión:** 8 SFX + 1 loop de música sintetizados con la librería estándar
-(`wave`), sin samples ni codificadores externos. Volúmenes y `loop` viven en
+**Decisi├│n:** 8 SFX + 1 loop de m├║sica sintetizados con la librer├¡a est├índar
+(`wave`), sin samples ni codificadores externos. Vol├║menes y `loop` viven en
 `manifest.audio`.
 
 **Consecuencias:** reproducible y sin licencias de terceros; ~0,9 MB en total.
-Si el tamaño molesta en producción, se pueden transcodificar a OGG sin cambiar
+Si el tama├▒o molesta en producci├│n, se pueden transcodificar a OGG sin cambiar
 las claves del manifiesto.
 
-### D-E08 — Fuente bitmap propia con acentos y ñ
+### D-E08 ÔÇö Fuente bitmap propia con acentos y ├▒
 
-**Decisión:** fuente 5×7 (caja 6×14, avance 6) en formato BMFont JSON, con
-`á é í ó ú ü ñ Á É Í Ó Ú Ü Ñ ¡ ¿ € º ª`. `assets/src/font_preview.png` es la
+**Decisi├│n:** fuente 5├ù7 (caja 6├ù14, avance 6) en formato BMFont JSON, con
+`├í ├® ├¡ ├│ ├║ ├╝ ├▒ ├ü ├ë ├ì ├ô ├Ü ├£ ├æ ┬í ┬┐ Ôé¼ ┬║ ┬¬`. `assets/src/font_preview.png` es la
 prueba visual.
 
 **Consecuencias:** no depende de fuentes web externas; D puede usar la misma
-rejilla en overlay DOM. Si se necesita otro tamaño, escalar por enteros.
+rejilla en overlay DOM. Si se necesita otro tama├▒o, escalar por enteros.
 
-### D-E09 — Repo sin Fase 0: assets "drop-in"
+### D-E09 ÔÇö Repo sin Fase 0: assets "drop-in"
 
-**Contexto:** el repo de origen solo contenía los prompts A–E; ni monorepo ni
-`docs/PROTOCOL.md` existen todavía.
+**Contexto:** el repo de origen solo conten├¡a los prompts AÔÇôE; ni monorepo ni
+`docs/PROTOCOL.md` existen todav├¡a.
 
-**Decisión:** se entregan solo los ficheros propiedad de E (`assets/`, `docs/ART.md`,
+**Decisi├│n:** se entregan solo los ficheros propiedad de E (`assets/`, `docs/ART.md`,
 `docs/CATALOG.md`, `tools/assets-build/`, este registro y el stub de `package.json`),
-con las rutas exactas de §1.3 para que A los integre sin mover nada.
+con las rutas exactas de ┬º1.3 para que A los integre sin mover nada.
 
-**Consecuencias:** no se toca `apps/*`, `packages/*` ni la CI de A. La validación
-de assets es independiente y puede añadirse como job de CI.
+**Consecuencias:** no se toca `apps/*`, `packages/*` ni la CI de A. La validaci├│n
+de assets es independiente y puede a├▒adirse como job de CI.
+
+---
+
+## A — Core, reglas y arquitectura
+
+### D-A01 — Transporte: `ws` + protocolo propio en lugar de Colyseus
+
+**Contexto:** la especificación permite `ws` solo si Colyseus bloquea el trabajo.
+
+**Decisión:** servidor sobre `ws` con el sobre `{v,type,id,ts,payload}` de `packages/shared`.
+
+**Consecuencias:** reconexión, timers y deduplicación son nuestros: `Room` gestiona la
+reserva de asiento de 45 s, el tick de 200 ms y la deduplicación por `id` en el cliente.
+
+### D-A02 — Node 24 en local, 22 en CI/Docker
+
+`engines.node >= 22`. El entorno de desarrollo tiene 24 LTS; CI y la imagen Docker fijan 22.
+
+### D-A03 — Dinero en euros enteros
+
+Sin decimales ni céntimos: evita errores de coma flotante en economía y ruleta.
+
+### D-A04 — RNG y reloj inyectados
+
+`game-core` nunca usa `Math.random()` ni `Date.now()`; firma `(state, rng, now)`. Los tests
+usan un LCG determinista y el servidor siembra con `Date.now()`.
+
+### D-A05 — Ruleta con commit–reveal
+
+Al abrir la fase se publica `hashSeed` (sha256 de la semilla) y al girar se revela la semilla
+y el resultado, de modo que el cliente puede verificar que no se cambió el resultado.
+
+### D-A06 — Anti-fuga estructural
+
+`LotSecret` vive en `packages/shared/src/secret.ts`, que el cliente **no importa**;
+`protocol.ts` solo expone `LotPublic`. Dos barreras: test unitario
+(`packages/game-core/src/leak.test.ts`) y escáner del bundle (`tools/check-leak.mjs`, en CI).
+
+### D-A07 — Prórrogas anti-snipe
+
+Ventana de 3 s, máximo 3 prórrogas; agotadas, el lote cierra en el timer vigente. Cada puja
+reinicia el timer a 12 s.
+
+### D-A08 — Lote desierto
+
+Si nadie puja no hay transferencia de dinero y el historial registra `deserted: true`.
+
+### D-A09 — Escalado del canvas
+
+`pixelArt: true`, `roundPixels: true`, `antialias: false`, resolución interna 480×270.
+El walking skeleton usa `Scale.FIT`; el pase de arte lo cambia a escalado entero ×3/×4.
+
+### D-A10 — Fase `ROUND_INTRO`
+
+La subasta se abre en el servidor y se envía `S2C_ROUND_INTRO` con 3 s de margen: el cliente
+muestra el lote con el temporizador ya corriendo, sin pausa bloqueante para 5 jugadores.
+
+### D-A11 — Códigos de error tipados
+
+Unión cerrada en `protocol.ts` (`BID_TOO_LOW`, `INSUFFICIENT_FUNDS`, `PHASE_INVALID`,
+`NOT_ALL_READY`, …). El servidor responde `S2C_ERROR` sin tumbar la sala.
+
+### D-A12 — Fusión del stub de `package.json` de E
+
+Se conservan los scripts `assets:build` / `assets:validate` (pipeline Python de E) y se añaden
+los scripts de Node (turbo, vitest, smoke, balance). El stub no declaraba workspaces; este
+commit introduce el monorepo real.
