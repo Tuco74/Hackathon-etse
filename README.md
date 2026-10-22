@@ -5,6 +5,16 @@ Juego web multijugador en tiempo real de subastas de trasteros (estilo *Storage 
 
 ## Arrancar en menos de 5 minutos
 
+La forma rápida en Linux/macOS:
+
+```bash
+./start.sh          # compila y abre http://localhost:2567
+PORT=8080 ./start.sh
+SKIP_BUILD=1 ./start.sh   # ya compilado
+```
+
+O con pnpm: `pnpm local`.
+
 Requisitos: **Node 22+** y **pnpm 9+**.
 
 ```bash

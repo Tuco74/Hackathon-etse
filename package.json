@@ -9,6 +9,7 @@
     "build": "turbo run build",
     "build:packages": "pnpm --filter @trastero/shared --filter @trastero/game-core exec tsc -b",
     "start": "pnpm --filter @trastero/server run start",
+    "local": "bash start.sh",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "vitest run",
