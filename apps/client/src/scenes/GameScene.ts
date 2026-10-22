@@ -114,7 +114,8 @@ export class GameScene extends Phaser.Scene {
     this.clearBidButtons();
     const container = this.add.container(W / 2, H - 24);
     this.bidButtons = container;
-    const labels = [minNext, minNext + 25, minNext + 100];
+    const step = CONFIG.auction.minIncrement;
+    const labels = [minNext, minNext + step, minNext + step * 4];
     labels.forEach((amount, i) => {
       const x = (i - 1) * 78;
       const rect = this.add.rectangle(x, 0, 70, 18, 0x221d2e).setStrokeStyle(1, 0x4a3f5c);

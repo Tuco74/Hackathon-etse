@@ -125,47 +125,39 @@ export function placeBid(state: MatchState, playerId: string, amount: number, no
   if (!player) return fail("NOT_CONNECTED");
   if (!player.connected) return fail("NOT_CONNECTED");
   if (a.highBidderId === playerId) return fail("NOT_YOUR_TURN");
-  if (amount < a.minNextBid && !(a.highBidderId === null && amount >= CONFIG.auction.minBid)) {
-    // allow opening at minBid
-    if (!(a.highBidderId === null && amount === CONFIG.auction.minBid)) {
-      return fail("BID_TOO_LOW");
-    }
-  }
   if (amount < CONFIG.auction.minBid) return fail("BID_TOO_LOW");
   if (a.highBidderId !== null && amount < a.currentBid + CONFIG.auction.minIncrement) return fail("BID_TOO_LOW");
   if (player.money < amount) return fail("INSUFFICIENT_FUNDS");
 
-  // extension check
+  // Each bid restarts the 12 s timer. A bid inside the anti-snipe window only
+  // restarts it while extensions remain; once the 3 are spent the lot closes
+  // at the current timer (D-A07), so a last-second bid cannot loop forever.
+  const nowTs = now();
+  const remaining = a.endsAt - nowTs;
+  if (remaining <= 0) return fail("PHASE_INVALID");
+
   let extensionsUsed = a.extensionsUsed;
-  const remaining = a.endsAt - now();
-  const antiSnipeWindow = CONFIG.auction.antiSnipeWindowMs;
-  let newEndsAt = a.endsAt;
-  if (remaining < antiSnipeWindow && extensionsUsed < CONFIG.auction.maxExtensions) {
-    extensionsUsed += 1;
-    newEndsAt = now() + CONFIG.auction.bidTimerSec * 1000;
-  } else if (remaining < antiSnipeWindow && extensionsUsed >= CONFIG.auction.maxExtensions) {
-    // no extension, keep endsAt (may be soon) -> if already expired handle by tick
+  let endsAt = a.endsAt;
+  if (remaining < CONFIG.auction.antiSnipeWindowMs) {
+    if (extensionsUsed < CONFIG.auction.maxExtensions) {
+      extensionsUsed += 1;
+      endsAt = nowTs + CONFIG.auction.bidTimerSec * 1000;
+    }
+  } else {
+    endsAt = nowTs + CONFIG.auction.bidTimerSec * 1000;
   }
 
-  const newMinNext = amount + CONFIG.auction.minIncrement;
   const newRound: RoundState = {
     ...r,
     auction: {
       ...a,
       currentBid: amount,
       highBidderId: playerId,
-      endsAt: newEndsAt === a.endsAt ? a.endsAt : newEndsAt,
+      endsAt,
       extensionsUsed,
-      minNextBid: newMinNext,
+      minNextBid: amount + CONFIG.auction.minIncrement,
     },
   };
-  // if no extension and remaining>=window, keep original endsAt; but a new bid should reset timer per spec: "se reinicia con cada puja"
-  newRound.auction!.endsAt = now() + CONFIG.auction.bidTimerSec * 1000;
-  if (remaining < antiSnipeWindow && extensionsUsed > a.extensionsUsed) {
-    // extension already set endsAt above; keep
-  } else {
-    newRound.auction!.endsAt = now() + CONFIG.auction.bidTimerSec * 1000;
-  }
 
   const state2: MatchState = {
     ...state,
@@ -334,7 +326,7 @@ export function spinRoulette(state: MatchState, _rng: Rng, now: Now = () => Date
     result,
     payouts,
   };
-  const newState: MatchState = { ...state, roulette: newRp };
+  const newState: MatchState = { ...state, players, roulette: newRp };
   // after spin, advance
   return advanceAfterRoulette(newState, _rng, now);
 }
