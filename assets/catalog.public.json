@@ -1,0 +1,202 @@
+{
+  "objects": [
+    {
+      "id": "tv_bw",
+      "category": "electronics",
+      "silhouette": "sil_tv",
+      "hints": [
+        "pesa como un muerto",
+        "huele a plástico viejo"
+      ]
+    },
+    {
+      "id": "tv_studio",
+      "category": "electronics",
+      "silhouette": "sil_tv",
+      "hints": [
+        "la carcasa parece buena",
+        "el cristal está intacto"
+      ]
+    },
+    {
+      "id": "radio_plastic",
+      "category": "electronics",
+      "silhouette": "sil_radio",
+      "hints": [
+        "el dial gira",
+        "suena a hueco"
+      ]
+    },
+    {
+      "id": "radio_bakelite",
+      "category": "electronics",
+      "silhouette": "sil_radio",
+      "hints": [
+        "el dial gira",
+        "tiene un brillo raro"
+      ]
+    },
+    {
+      "id": "toolbox_rusty",
+      "category": "tools",
+      "silhouette": "sil_toolbox",
+      "hints": [
+        "pesa lo suyo",
+        "las bisagras están sueltas"
+      ]
+    },
+    {
+      "id": "toolbox_pro",
+      "category": "tools",
+      "silhouette": "sil_toolbox",
+      "hints": [
+        "pesa lo suyo",
+        "no se abre del todo"
+      ]
+    },
+    {
+      "id": "drill_corded",
+      "category": "tools",
+      "silhouette": "sil_drill",
+      "hints": [
+        "el cable está enrollado",
+        "tiene polvo de obra"
+      ]
+    },
+    {
+      "id": "chair_folding",
+      "category": "furniture",
+      "silhouette": "sil_chair",
+      "hints": [
+        "cojea un poco",
+        "huele a sótano"
+      ]
+    },
+    {
+      "id": "chair_designer",
+      "category": "furniture",
+      "silhouette": "sil_chair",
+      "hints": [
+        "cojea un poco",
+        "la madera pesa de más"
+      ]
+    },
+    {
+      "id": "lamp_tiffany",
+      "category": "furniture",
+      "silhouette": "sil_lamp",
+      "hints": [
+        "el cristal tintinea",
+        "está boca abajo"
+      ]
+    },
+    {
+      "id": "vase_repro",
+      "category": "collectibles",
+      "silhouette": "sil_vase",
+      "hints": [
+        "tiene una grieta",
+        "el brillo es plano"
+      ]
+    },
+    {
+      "id": "vase_ming",
+      "category": "collectibles",
+      "silhouette": "sil_vase",
+      "hints": [
+        "tiene una grieta",
+        "el brillo es profundo"
+      ]
+    },
+    {
+      "id": "comic_slab",
+      "category": "collectibles",
+      "silhouette": "sil_comic",
+      "hints": [
+        "está rígido",
+        "no se puede hojear"
+      ]
+    },
+    {
+      "id": "jacket_work",
+      "category": "clothing",
+      "silhouette": "sil_jacket",
+      "hints": [
+        "huele a gasolina",
+        "tiene manchas"
+      ]
+    },
+    {
+      "id": "jacket_leather",
+      "category": "clothing",
+      "silhouette": "sil_jacket",
+      "hints": [
+        "huele a gasolina",
+        "el forro está entero"
+      ]
+    },
+    {
+      "id": "sneakers_boxed",
+      "category": "clothing",
+      "silhouette": "sil_sneaker",
+      "hints": [
+        "hay una caja",
+        "la suela está limpia"
+      ]
+    },
+    {
+      "id": "trophy_participant",
+      "category": "sports",
+      "silhouette": "sil_trophy",
+      "hints": [
+        "pesa menos de lo que parece",
+        "la placa está en blanco"
+      ]
+    },
+    {
+      "id": "trophy_champions",
+      "category": "sports",
+      "silhouette": "sil_trophy",
+      "hints": [
+        "pesa menos de lo que parece",
+        "la placa está grabada"
+      ]
+    },
+    {
+      "id": "mixer_basic",
+      "category": "kitchen",
+      "silhouette": "sil_mixer",
+      "hints": [
+        "el vaso está suelto",
+        "gira con ruido"
+      ]
+    },
+    {
+      "id": "mixer_vintage",
+      "category": "kitchen",
+      "silhouette": "sil_mixer",
+      "hints": [
+        "el vaso está suelto",
+        "el motor suena fino"
+      ]
+    },
+    {
+      "id": "crate_locked",
+      "category": "mystery",
+      "silhouette": "sil_crate",
+      "hints": [
+        "no se puede abrir",
+        "pesa y no suena a hueco"
+      ]
+    },
+    {
+      "id": "crate_cardboard",
+      "category": "mystery",
+      "silhouette": "sil_crate",
+      "hints": [
+        "no se puede abrir",
+        "pesa y no suena a hueco"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,485 @@
+{
+  "note": "PRIVATE - contains true values. Server/game-core only. Never bundle for the client.",
+  "categories": {
+    "electronics": "Electrónica",
+    "tools": "Herramientas",
+    "furniture": "Muebles",
+    "collectibles": "Coleccionables",
+    "clothing": "Ropa",
+    "sports": "Deportes",
+    "kitchen": "Cocina",
+    "mystery": "Misterio"
+  },
+  "objects": [
+    {
+      "id": "tv_bw",
+      "name": "Televisor en blanco y negro",
+      "category": "electronics",
+      "silhouette": "sil_tv",
+      "value": 35,
+      "rarity": "common",
+      "hook": false,
+      "width": 20,
+      "height": 22,
+      "hints": [
+        "pesa como un muerto",
+        "huele a plástico viejo"
+      ],
+      "sprite": "obj_tv_bw",
+      "silhouetteSprite": "sil_tv",
+      "silhouetteFrame": "sil_sil_tv"
+    },
+    {
+      "id": "tv_studio",
+      "name": "Monitor de estudio de los 80",
+      "category": "electronics",
+      "silhouette": "sil_tv",
+      "value": 420,
+      "rarity": "rare",
+      "hook": true,
+      "width": 20,
+      "height": 22,
+      "hints": [
+        "la carcasa parece buena",
+        "el cristal está intacto"
+      ],
+      "sprite": "obj_tv_studio",
+      "silhouetteSprite": "sil_tv",
+      "silhouetteFrame": "sil_sil_tv"
+    },
+    {
+      "id": "radio_plastic",
+      "name": "Radio de plástico",
+      "category": "electronics",
+      "silhouette": "sil_radio",
+      "value": 20,
+      "rarity": "common",
+      "hook": false,
+      "width": 18,
+      "height": 19,
+      "hints": [
+        "el dial gira",
+        "suena a hueco"
+      ],
+      "sprite": "obj_radio_plastic",
+      "silhouetteSprite": "sil_radio",
+      "silhouetteFrame": "sil_sil_radio"
+    },
+    {
+      "id": "radio_bakelite",
+      "name": "Radio de baquelita",
+      "category": "electronics",
+      "silhouette": "sil_radio",
+      "value": 340,
+      "rarity": "rare",
+      "hook": true,
+      "width": 18,
+      "height": 19,
+      "hints": [
+        "el dial gira",
+        "tiene un brillo raro"
+      ],
+      "sprite": "obj_radio_bakelite",
+      "silhouetteSprite": "sil_radio",
+      "silhouetteFrame": "sil_sil_radio"
+    },
+    {
+      "id": "toolbox_rusty",
+      "name": "Caja de herramientas oxidada",
+      "category": "tools",
+      "silhouette": "sil_toolbox",
+      "value": 30,
+      "rarity": "common",
+      "hook": false,
+      "width": 20,
+      "height": 19,
+      "hints": [
+        "pesa lo suyo",
+        "las bisagras están sueltas"
+      ],
+      "sprite": "obj_toolbox_rusty",
+      "silhouetteSprite": "sil_toolbox",
+      "silhouetteFrame": "sil_sil_toolbox"
+    },
+    {
+      "id": "toolbox_pro",
+      "name": "Maletín de herramientas pro",
+      "category": "tools",
+      "silhouette": "sil_toolbox",
+      "value": 360,
+      "rarity": "rare",
+      "hook": false,
+      "width": 20,
+      "height": 19,
+      "hints": [
+        "pesa lo suyo",
+        "no se abre del todo"
+      ],
+      "sprite": "obj_toolbox_pro",
+      "silhouetteSprite": "sil_toolbox",
+      "silhouetteFrame": "sil_sil_toolbox"
+    },
+    {
+      "id": "drill_corded",
+      "name": "Taladro con cable",
+      "category": "tools",
+      "silhouette": "sil_drill",
+      "value": 170,
+      "rarity": "uncommon",
+      "hook": false,
+      "width": 21,
+      "height": 19,
+      "hints": [
+        "el cable está enrollado",
+        "tiene polvo de obra"
+      ],
+      "sprite": "obj_drill_corded",
+      "silhouetteSprite": "sil_drill",
+      "silhouetteFrame": "sil_sil_drill"
+    },
+    {
+      "id": "chair_folding",
+      "name": "Silla plegable",
+      "category": "furniture",
+      "silhouette": "sil_chair",
+      "value": 15,
+      "rarity": "common",
+      "hook": false,
+      "width": 18,
+      "height": 20,
+      "hints": [
+        "cojea un poco",
+        "huele a sótano"
+      ],
+      "sprite": "obj_chair_folding",
+      "silhouetteSprite": "sil_chair",
+      "silhouetteFrame": "sil_sil_chair"
+    },
+    {
+      "id": "chair_designer",
+      "name": "Silla de diseñador",
+      "category": "furniture",
+      "silhouette": "sil_chair",
+      "value": 500,
+      "rarity": "rare",
+      "hook": true,
+      "width": 18,
+      "height": 20,
+      "hints": [
+        "cojea un poco",
+        "la madera pesa de más"
+      ],
+      "sprite": "obj_chair_designer",
+      "silhouetteSprite": "sil_chair",
+      "silhouetteFrame": "sil_sil_chair"
+    },
+    {
+      "id": "lamp_tiffany",
+      "name": "Lámpara Tiffany",
+      "category": "furniture",
+      "silhouette": "sil_lamp",
+      "value": 380,
+      "rarity": "uncommon",
+      "hook": false,
+      "width": 16,
+      "height": 20,
+      "hints": [
+        "el cristal tintinea",
+        "está boca abajo"
+      ],
+      "sprite": "obj_lamp_tiffany",
+      "silhouetteSprite": "sil_lamp",
+      "silhouetteFrame": "sil_sil_lamp"
+    },
+    {
+      "id": "vase_repro",
+      "name": "Jarrón réplica",
+      "category": "collectibles",
+      "silhouette": "sil_vase",
+      "value": 25,
+      "rarity": "common",
+      "hook": false,
+      "width": 12,
+      "height": 21,
+      "hints": [
+        "tiene una grieta",
+        "el brillo es plano"
+      ],
+      "sprite": "obj_vase_repro",
+      "silhouetteSprite": "sil_vase",
+      "silhouetteFrame": "sil_sil_vase"
+    },
+    {
+      "id": "vase_ming",
+      "name": "Jarrón Ming auténtico",
+      "category": "collectibles",
+      "silhouette": "sil_vase",
+      "value": 900,
+      "rarity": "rare",
+      "hook": true,
+      "width": 12,
+      "height": 21,
+      "hints": [
+        "tiene una grieta",
+        "el brillo es profundo"
+      ],
+      "sprite": "obj_vase_ming",
+      "silhouetteSprite": "sil_vase",
+      "silhouetteFrame": "sil_sil_vase"
+    },
+    {
+      "id": "comic_slab",
+      "name": "Cómic precintado",
+      "category": "collectibles",
+      "silhouette": "sil_comic",
+      "value": 240,
+      "rarity": "uncommon",
+      "hook": false,
+      "width": 15,
+      "height": 19,
+      "hints": [
+        "está rígido",
+        "no se puede hojear"
+      ],
+      "sprite": "obj_comic_slab",
+      "silhouetteSprite": "sil_comic",
+      "silhouetteFrame": "sil_sil_comic"
+    },
+    {
+      "id": "jacket_work",
+      "name": "Chaqueta de trabajo",
+      "category": "clothing",
+      "silhouette": "sil_jacket",
+      "value": 20,
+      "rarity": "common",
+      "hook": false,
+      "width": 18,
+      "height": 19,
+      "hints": [
+        "huele a gasolina",
+        "tiene manchas"
+      ],
+      "sprite": "obj_jacket_work",
+      "silhouetteSprite": "sil_jacket",
+      "silhouetteFrame": "sil_sil_jacket"
+    },
+    {
+      "id": "jacket_leather",
+      "name": "Chaqueta de cuero",
+      "category": "clothing",
+      "silhouette": "sil_jacket",
+      "value": 280,
+      "rarity": "rare",
+      "hook": false,
+      "width": 18,
+      "height": 19,
+      "hints": [
+        "huele a gasolina",
+        "el forro está entero"
+      ],
+      "sprite": "obj_jacket_leather",
+      "silhouetteSprite": "sil_jacket",
+      "silhouetteFrame": "sil_sil_jacket"
+    },
+    {
+      "id": "sneakers_boxed",
+      "name": "Zapatillas sin estrenar",
+      "category": "clothing",
+      "silhouette": "sil_sneaker",
+      "value": 120,
+      "rarity": "uncommon",
+      "hook": false,
+      "width": 20,
+      "height": 13,
+      "hints": [
+        "hay una caja",
+        "la suela está limpia"
+      ],
+      "sprite": "obj_sneakers_boxed",
+      "silhouetteSprite": "sil_sneaker",
+      "silhouetteFrame": "sil_sil_sneaker"
+    },
+    {
+      "id": "trophy_participant",
+      "name": "Trofeo de participación",
+      "category": "sports",
+      "silhouette": "sil_trophy",
+      "value": 15,
+      "rarity": "common",
+      "hook": false,
+      "width": 17,
+      "height": 19,
+      "hints": [
+        "pesa menos de lo que parece",
+        "la placa está en blanco"
+      ],
+      "sprite": "obj_trophy_participant",
+      "silhouetteSprite": "sil_trophy",
+      "silhouetteFrame": "sil_sil_trophy"
+    },
+    {
+      "id": "trophy_champions",
+      "name": "Trofeo de campeón",
+      "category": "sports",
+      "silhouette": "sil_trophy",
+      "value": 650,
+      "rarity": "rare",
+      "hook": true,
+      "width": 17,
+      "height": 19,
+      "hints": [
+        "pesa menos de lo que parece",
+        "la placa está grabada"
+      ],
+      "sprite": "obj_trophy_champions",
+      "silhouetteSprite": "sil_trophy",
+      "silhouetteFrame": "sil_sil_trophy"
+    },
+    {
+      "id": "mixer_basic",
+      "name": "Batidora básica",
+      "category": "kitchen",
+      "silhouette": "sil_mixer",
+      "value": 25,
+      "rarity": "common",
+      "hook": false,
+      "width": 17,
+      "height": 18,
+      "hints": [
+        "el vaso está suelto",
+        "gira con ruido"
+      ],
+      "sprite": "obj_mixer_basic",
+      "silhouetteSprite": "sil_mixer",
+      "silhouetteFrame": "sil_sil_mixer"
+    },
+    {
+      "id": "mixer_vintage",
+      "name": "Batidora vintage",
+      "category": "kitchen",
+      "silhouette": "sil_mixer",
+      "value": 450,
+      "rarity": "rare",
+      "hook": true,
+      "width": 17,
+      "height": 18,
+      "hints": [
+        "el vaso está suelto",
+        "el motor suena fino"
+      ],
+      "sprite": "obj_mixer_vintage",
+      "silhouetteSprite": "sil_mixer",
+      "silhouetteFrame": "sil_sil_mixer"
+    },
+    {
+      "id": "crate_locked",
+      "name": "Caja cerrada con candado",
+      "category": "mystery",
+      "silhouette": "sil_crate",
+      "value": 480,
+      "rarity": "rare",
+      "hook": true,
+      "width": 19,
+      "height": 17,
+      "hints": [
+        "no se puede abrir",
+        "pesa y no suena a hueco"
+      ],
+      "sprite": "obj_crate_locked",
+      "silhouetteSprite": "sil_crate",
+      "silhouetteFrame": "sil_sil_crate"
+    },
+    {
+      "id": "crate_cardboard",
+      "name": "Caja de cartón cerrada",
+      "category": "mystery",
+      "silhouette": "sil_crate",
+      "value": 45,
+      "rarity": "common",
+      "hook": false,
+      "width": 19,
+      "height": 17,
+      "hints": [
+        "no se puede abrir",
+        "pesa y no suena a hueco"
+      ],
+      "sprite": "obj_crate_cardboard",
+      "silhouetteSprite": "sil_crate",
+      "silhouetteFrame": "sil_sil_crate"
+    }
+  ],
+  "trapPairs": [
+    {
+      "silhouette": "sil_tv",
+      "objects": [
+        "tv_bw",
+        "tv_studio"
+      ],
+      "ratio": 12.0
+    },
+    {
+      "silhouette": "sil_radio",
+      "objects": [
+        "radio_plastic",
+        "radio_bakelite"
+      ],
+      "ratio": 17.0
+    },
+    {
+      "silhouette": "sil_toolbox",
+      "objects": [
+        "toolbox_rusty",
+        "toolbox_pro"
+      ],
+      "ratio": 12.0
+    },
+    {
+      "silhouette": "sil_chair",
+      "objects": [
+        "chair_folding",
+        "chair_designer"
+      ],
+      "ratio": 33.3
+    },
+    {
+      "silhouette": "sil_vase",
+      "objects": [
+        "vase_repro",
+        "vase_ming"
+      ],
+      "ratio": 36.0
+    },
+    {
+      "silhouette": "sil_jacket",
+      "objects": [
+        "jacket_work",
+        "jacket_leather"
+      ],
+      "ratio": 14.0
+    },
+    {
+      "silhouette": "sil_trophy",
+      "objects": [
+        "trophy_participant",
+        "trophy_champions"
+      ],
+      "ratio": 43.3
+    },
+    {
+      "silhouette": "sil_mixer",
+      "objects": [
+        "mixer_basic",
+        "mixer_vintage"
+      ],
+      "ratio": 18.0
+    },
+    {
+      "silhouette": "sil_crate",
+      "objects": [
+        "crate_locked",
+        "crate_cardboard"
+      ],
+      "ratio": 10.7
+    }
+  ]
+}

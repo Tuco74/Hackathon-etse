@@ -1,0 +1,765 @@
+{
+  "version": 1,
+  "game": {
+    "width": 480,
+    "height": 270,
+    "scale": 4,
+    "pixelArt": true,
+    "roundPixels": true,
+    "antialias": false
+  },
+  "palette": {
+    "file": "palette.json",
+    "colours": 46,
+    "silhouette": {
+      "fill": "#4a4459",
+      "shade": "#2f2a3c",
+      "outline": "#0b0910"
+    }
+  },
+  "font": {
+    "image": "atlases/font.png",
+    "data": "atlases/font.json",
+    "charWidth": 6,
+    "lineHeight": 14
+  },
+  "atlases": {
+    "objects": {
+      "image": "atlases/objects.png",
+      "data": "atlases/objects.json"
+    },
+    "ui": {
+      "image": "atlases/ui.png",
+      "data": "atlases/ui.json"
+    }
+  },
+  "sprites": {
+    "obj_tv_bw": {
+      "atlas": "objects",
+      "frame": "obj_tv_bw",
+      "category": "electronics",
+      "silhouette": "sil_tv",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_tv_studio": {
+      "atlas": "objects",
+      "frame": "obj_tv_studio",
+      "category": "electronics",
+      "silhouette": "sil_tv",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_radio_plastic": {
+      "atlas": "objects",
+      "frame": "obj_radio_plastic",
+      "category": "electronics",
+      "silhouette": "sil_radio",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_radio_bakelite": {
+      "atlas": "objects",
+      "frame": "obj_radio_bakelite",
+      "category": "electronics",
+      "silhouette": "sil_radio",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_toolbox_rusty": {
+      "atlas": "objects",
+      "frame": "obj_toolbox_rusty",
+      "category": "tools",
+      "silhouette": "sil_toolbox",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_toolbox_pro": {
+      "atlas": "objects",
+      "frame": "obj_toolbox_pro",
+      "category": "tools",
+      "silhouette": "sil_toolbox",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_drill_corded": {
+      "atlas": "objects",
+      "frame": "obj_drill_corded",
+      "category": "tools",
+      "silhouette": "sil_drill",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_chair_folding": {
+      "atlas": "objects",
+      "frame": "obj_chair_folding",
+      "category": "furniture",
+      "silhouette": "sil_chair",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_chair_designer": {
+      "atlas": "objects",
+      "frame": "obj_chair_designer",
+      "category": "furniture",
+      "silhouette": "sil_chair",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_lamp_tiffany": {
+      "atlas": "objects",
+      "frame": "obj_lamp_tiffany",
+      "category": "furniture",
+      "silhouette": "sil_lamp",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_vase_repro": {
+      "atlas": "objects",
+      "frame": "obj_vase_repro",
+      "category": "collectibles",
+      "silhouette": "sil_vase",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_vase_ming": {
+      "atlas": "objects",
+      "frame": "obj_vase_ming",
+      "category": "collectibles",
+      "silhouette": "sil_vase",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_comic_slab": {
+      "atlas": "objects",
+      "frame": "obj_comic_slab",
+      "category": "collectibles",
+      "silhouette": "sil_comic",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_jacket_work": {
+      "atlas": "objects",
+      "frame": "obj_jacket_work",
+      "category": "clothing",
+      "silhouette": "sil_jacket",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_jacket_leather": {
+      "atlas": "objects",
+      "frame": "obj_jacket_leather",
+      "category": "clothing",
+      "silhouette": "sil_jacket",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_sneakers_boxed": {
+      "atlas": "objects",
+      "frame": "obj_sneakers_boxed",
+      "category": "clothing",
+      "silhouette": "sil_sneaker",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_trophy_participant": {
+      "atlas": "objects",
+      "frame": "obj_trophy_participant",
+      "category": "sports",
+      "silhouette": "sil_trophy",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_trophy_champions": {
+      "atlas": "objects",
+      "frame": "obj_trophy_champions",
+      "category": "sports",
+      "silhouette": "sil_trophy",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_mixer_basic": {
+      "atlas": "objects",
+      "frame": "obj_mixer_basic",
+      "category": "kitchen",
+      "silhouette": "sil_mixer",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_mixer_vintage": {
+      "atlas": "objects",
+      "frame": "obj_mixer_vintage",
+      "category": "kitchen",
+      "silhouette": "sil_mixer",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_crate_locked": {
+      "atlas": "objects",
+      "frame": "obj_crate_locked",
+      "category": "mystery",
+      "silhouette": "sil_crate",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "obj_crate_cardboard": {
+      "atlas": "objects",
+      "frame": "obj_crate_cardboard",
+      "category": "mystery",
+      "silhouette": "sil_crate",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    }
+  },
+  "silhouettes": {
+    "sil_tv": {
+      "atlas": "objects",
+      "frame": "sil_sil_tv",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_radio": {
+      "atlas": "objects",
+      "frame": "sil_sil_radio",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_toolbox": {
+      "atlas": "objects",
+      "frame": "sil_sil_toolbox",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_drill": {
+      "atlas": "objects",
+      "frame": "sil_sil_drill",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_chair": {
+      "atlas": "objects",
+      "frame": "sil_sil_chair",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_lamp": {
+      "atlas": "objects",
+      "frame": "sil_sil_lamp",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_vase": {
+      "atlas": "objects",
+      "frame": "sil_sil_vase",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_comic": {
+      "atlas": "objects",
+      "frame": "sil_sil_comic",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_jacket": {
+      "atlas": "objects",
+      "frame": "sil_sil_jacket",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_sneaker": {
+      "atlas": "objects",
+      "frame": "sil_sil_sneaker",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_trophy": {
+      "atlas": "objects",
+      "frame": "sil_sil_trophy",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_mixer": {
+      "atlas": "objects",
+      "frame": "sil_sil_mixer",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    },
+    "sil_crate": {
+      "atlas": "objects",
+      "frame": "sil_sil_crate",
+      "w": 24,
+      "h": 24,
+      "anchor": [
+        0.5,
+        1.0
+      ]
+    }
+  },
+  "ui": {
+    "panel": {
+      "atlas": "ui",
+      "frame": "panel",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "panel_dark": {
+      "atlas": "ui",
+      "frame": "panel_dark",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "panel_gold": {
+      "atlas": "ui",
+      "frame": "panel_gold",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "panel_alert": {
+      "atlas": "ui",
+      "frame": "panel_alert",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "input": {
+      "atlas": "ui",
+      "frame": "input",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "button": {
+      "atlas": "ui",
+      "frame": "button",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "button_hover": {
+      "atlas": "ui",
+      "frame": "button_hover",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "button_active": {
+      "atlas": "ui",
+      "frame": "button_active",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "button_disabled": {
+      "atlas": "ui",
+      "frame": "button_disabled",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "button_bid": {
+      "atlas": "ui",
+      "frame": "button_bid",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "button_danger": {
+      "atlas": "ui",
+      "frame": "button_danger",
+      "left": 8,
+      "right": 8,
+      "top": 8,
+      "bottom": 8
+    },
+    "coin_0": {
+      "atlas": "ui",
+      "frame": "coin_0"
+    },
+    "coin_1": {
+      "atlas": "ui",
+      "frame": "coin_1"
+    },
+    "coin_2": {
+      "atlas": "ui",
+      "frame": "coin_2"
+    },
+    "coin_3": {
+      "atlas": "ui",
+      "frame": "coin_3"
+    },
+    "coin_4": {
+      "atlas": "ui",
+      "frame": "coin_4"
+    },
+    "coin_5": {
+      "atlas": "ui",
+      "frame": "coin_5"
+    },
+    "coin_6": {
+      "atlas": "ui",
+      "frame": "coin_6"
+    },
+    "coin_7": {
+      "atlas": "ui",
+      "frame": "coin_7"
+    },
+    "gavel": {
+      "atlas": "ui",
+      "frame": "gavel"
+    },
+    "wheel": {
+      "atlas": "ui",
+      "frame": "wheel"
+    },
+    "pointer": {
+      "atlas": "ui",
+      "frame": "pointer"
+    },
+    "cursor": {
+      "atlas": "ui",
+      "frame": "cursor"
+    },
+    "icon_electronics": {
+      "atlas": "ui",
+      "frame": "icon_electronics"
+    },
+    "icon_tools": {
+      "atlas": "ui",
+      "frame": "icon_tools"
+    },
+    "icon_furniture": {
+      "atlas": "ui",
+      "frame": "icon_furniture"
+    },
+    "icon_collectibles": {
+      "atlas": "ui",
+      "frame": "icon_collectibles"
+    },
+    "icon_clothing": {
+      "atlas": "ui",
+      "frame": "icon_clothing"
+    },
+    "icon_sports": {
+      "atlas": "ui",
+      "frame": "icon_sports"
+    },
+    "icon_kitchen": {
+      "atlas": "ui",
+      "frame": "icon_kitchen"
+    },
+    "icon_mystery": {
+      "atlas": "ui",
+      "frame": "icon_mystery"
+    },
+    "icon_money": {
+      "atlas": "ui",
+      "frame": "icon_money"
+    },
+    "icon_clock": {
+      "atlas": "ui",
+      "frame": "icon_clock"
+    },
+    "icon_lock": {
+      "atlas": "ui",
+      "frame": "icon_lock"
+    },
+    "icon_profit": {
+      "atlas": "ui",
+      "frame": "icon_profit"
+    },
+    "icon_loss": {
+      "atlas": "ui",
+      "frame": "icon_loss"
+    },
+    "icon_users": {
+      "atlas": "ui",
+      "frame": "icon_users"
+    },
+    "icon_timer": {
+      "atlas": "ui",
+      "frame": "icon_timer"
+    },
+    "emote_happy": {
+      "atlas": "ui",
+      "frame": "emote_happy"
+    },
+    "emote_sad": {
+      "atlas": "ui",
+      "frame": "emote_sad"
+    },
+    "emote_angry": {
+      "atlas": "ui",
+      "frame": "emote_angry"
+    },
+    "emote_wow": {
+      "atlas": "ui",
+      "frame": "emote_wow"
+    },
+    "emote_cool": {
+      "atlas": "ui",
+      "frame": "emote_cool"
+    },
+    "emote_think": {
+      "atlas": "ui",
+      "frame": "emote_think"
+    }
+  },
+  "animations": {
+    "coin_spin": {
+      "atlas": "ui",
+      "frames": [
+        "coin_0",
+        "coin_1",
+        "coin_2",
+        "coin_3",
+        "coin_4",
+        "coin_5",
+        "coin_6",
+        "coin_7"
+      ],
+      "fps": 12,
+      "loop": true
+    },
+    "dust": {
+      "image": "backgrounds/dust.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "frames": 8,
+      "fps": 8,
+      "loop": true
+    }
+  },
+  "backgrounds": {
+    "unit_a": {
+      "back": "backgrounds/unit_a_back.png",
+      "mid": "backgrounds/unit_a_mid.png",
+      "front": "backgrounds/unit_a_front.png",
+      "parallax": [
+        0.0,
+        0.35,
+        0.6
+      ]
+    },
+    "unit_b": {
+      "back": "backgrounds/unit_b_back.png",
+      "mid": "backgrounds/unit_b_mid.png",
+      "front": "backgrounds/unit_b_front.png",
+      "parallax": [
+        0.0,
+        0.35,
+        0.6
+      ]
+    },
+    "unit_c": {
+      "back": "backgrounds/unit_c_back.png",
+      "mid": "backgrounds/unit_c_mid.png",
+      "front": "backgrounds/unit_c_front.png",
+      "parallax": [
+        0.0,
+        0.35,
+        0.6
+      ]
+    }
+  },
+  "overlays": {
+    "light": "backgrounds/light_cone.png",
+    "vignette": "backgrounds/vignette.png"
+  },
+  "audio": {
+    "sfx_bid": {
+      "file": "audio/sfx_bid.wav",
+      "volume": 0.5,
+      "loop": false
+    },
+    "sfx_gavel": {
+      "file": "audio/sfx_gavel.wav",
+      "volume": 0.7,
+      "loop": false
+    },
+    "sfx_coin": {
+      "file": "audio/sfx_coin.wav",
+      "volume": 0.6,
+      "loop": false
+    },
+    "sfx_spin": {
+      "file": "audio/sfx_spin.wav",
+      "volume": 0.5,
+      "loop": false
+    },
+    "sfx_tension": {
+      "file": "audio/sfx_tension.wav",
+      "volume": 0.35,
+      "loop": true
+    },
+    "sfx_win": {
+      "file": "audio/sfx_win.wav",
+      "volume": 0.7,
+      "loop": false
+    },
+    "sfx_lose": {
+      "file": "audio/sfx_lose.wav",
+      "volume": 0.6,
+      "loop": false
+    },
+    "sfx_roulette": {
+      "file": "audio/sfx_roulette.wav",
+      "volume": 0.6,
+      "loop": false
+    },
+    "music_loop": {
+      "file": "audio/music_loop.wav",
+      "volume": 0.3,
+      "loop": true
+    }
+  },
+  "catalog": "catalog.public.json"
+}

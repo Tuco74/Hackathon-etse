@@ -1,0 +1,12 @@
+{
+  "palette": {
+    "base": "#2c5e3d",
+    "light": "#8fcf74",
+    "shadow": "#173327",
+    "dark": "#0b0910",
+    "metal": "#c99a3c",
+    "glass": "#ffd166",
+    "accent": "#7d4a93",
+    "base2": "#173327"
+  }
+}
