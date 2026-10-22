@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "count": 46,
+  "note": "Cerrada: ningun sprite puede usar un color fuera de esta lista.",
+  "colours": {
+    "ink": "#0b0910",
+    "night": "#14111d",
+    "shadow": "#1e1a29",
+    "wall_dark": "#2a2438",
+    "wall": "#3a3349",
+    "wall_light": "#4d4560",
+    "grey1": "#5f576f",
+    "grey2": "#7d7589",
+    "grey3": "#a49cb2",
+    "grey4": "#cfc9d9",
+    "white": "#f6f3fa",
+    "brown1": "#2f1d14",
+    "brown2": "#4a2c1c",
+    "brown3": "#6d4527",
+    "brown4": "#96683a",
+    "brown5": "#c19057",
+    "brown6": "#e6c089",
+    "red1": "#4a141f",
+    "red2": "#7c2033",
+    "red3": "#b63246",
+    "red4": "#e35d68",
+    "orange1": "#7a3a10",
+    "orange2": "#b86a18",
+    "orange3": "#f0a03a",
+    "yellow1": "#ffd166",
+    "yellow2": "#f2b134",
+    "green1": "#173327",
+    "green2": "#2c5e3d",
+    "green3": "#4f9455",
+    "green4": "#8fcf74",
+    "teal1": "#123a3a",
+    "teal2": "#1f6a63",
+    "teal3": "#3fb8a6",
+    "cyan1": "#6fe3e1",
+    "blue1": "#16243c",
+    "blue2": "#274a75",
+    "blue3": "#3f7bb0",
+    "blue4": "#7fb6dd",
+    "purple1": "#2e1a44",
+    "purple2": "#53306b",
+    "purple3": "#7d4a93",
+    "purple4": "#b07ac4",
+    "pink1": "#d94f8a",
+    "pink2": "#ff8fc0",
+    "gold1": "#c99a3c",
+    "gold2": "#f0d27a"
+  },
+  "silhouette": {
+    "fill": "#4a4459",
+    "shade": "#2f2a3c",
+    "outline": "#0b0910"
+  },
+  "groups": {
+    "neutrals": [
+      "ink",
+      "night",
+      "shadow",
+      "wall_dark",
+      "wall",
+      "wall_light",
+      "grey1",
+      "grey2",
+      "grey3",
+      "grey4",
+      "white"
+    ],
+    "wood": [
+      "brown1",
+      "brown2",
+      "brown3",
+      "brown4",
+      "brown5",
+      "brown6"
+    ],
+    "red": [
+      "red1",
+      "red2",
+      "red3",
+      "red4"
+    ],
+    "orange_yellow": [
+      "orange1",
+      "orange2",
+      "orange3",
+      "yellow1",
+      "yellow2"
+    ],
+    "green": [
+      "green1",
+      "green2",
+      "green3",
+      "green4"
+    ],
+    "teal_cyan": [
+      "teal1",
+      "teal2",
+      "teal3",
+      "cyan1"
+    ],
+    "blue": [
+      "blue1",
+      "blue2",
+      "blue3",
+      "blue4"
+    ],
+    "purple_pink": [
+      "purple1",
+      "purple2",
+      "purple3",
+      "purple4",
+      "pink1",
+      "pink2"
+    ],
+    "gold": [
+      "gold1",
+      "gold2"
+    ]
+  }
+}
