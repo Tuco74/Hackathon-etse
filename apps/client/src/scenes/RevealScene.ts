@@ -3,6 +3,7 @@ import { session } from "../game/session";
 import { getCatalog, getManifest } from "../game/bus";
 import { silhouetteFor, spriteForObject } from "../game/assetMap";
 import { audio } from "../game/audio";
+import { announce, prefersReducedMotion } from "../game/a11y";
 import { createBackdrop, unitForRound, type Backdrop } from "../render/backdrop";
 import {
   DEPTH,
@@ -51,6 +52,7 @@ export class RevealScene extends Phaser.Scene {
       return;
     }
 
+    const reduced = prefersReducedMotion();
     const totalLabel = addLabel(this, 468, 9, "TOTAL 0 €", WHITE, [1, 0]).setDepth(DEPTH.hud + 1);
     const nameLabel = addLabel(this, W / 2, 46, "", GOLD, [0.5, 0]).setDepth(DEPTH.hud + 1);
 
@@ -76,21 +78,31 @@ export class RevealScene extends Phaser.Scene {
       sprite.setData("name", object.name);
       sprite.setData("sprite", spriteForObject(manifest, catalog, object.name, object.silhouetteId));
 
-      this.time.delayedCall(350 + index * 420, () => {
+      const showValue = (): void => {
+        valueLabel.setText(money(object.value)).setAlpha(1);
+        revealed += 1;
+        const partial = reveal.objects
+          .slice(0, revealed)
+          .reduce((sum, o) => sum + o.value, 0);
+        totalLabel.setText(`TOTAL ${money(partial)}`);
+        audio.play("sfx_coin");
+      };
+      const showObject = (): void => {
         nameLabel.setText(object.name);
-        this.flip(sprite, () => {
-          valueLabel.setText(money(object.value)).setAlpha(1);
-          revealed += 1;
-          const partial = reveal.objects
-            .slice(0, revealed)
-            .reduce((sum, o) => sum + o.value, 0);
-          totalLabel.setText(`TOTAL ${money(partial)}`);
-          audio.play("sfx_coin");
-        });
-      });
+        if (reduced) {
+          const target = sprite.getData("sprite") as string | undefined;
+          if (target) sprite.setTexture("objects", target);
+          showValue();
+          return;
+        }
+        this.flip(sprite, showValue);
+      };
+
+      if (reduced) showObject();
+      else this.time.delayedCall(350 + index * 420, showObject);
     });
 
-    this.time.delayedCall(500 + count * 420, () => {
+    this.time.delayedCall(reduced ? 0 : 500 + count * 420, () => {
       nameLabel.setText("");
       this.showSummary();
     });
@@ -136,26 +148,33 @@ export class RevealScene extends Phaser.Scene {
       add(46, "LOTE DESIERTO", GREY);
       add(68, "Nadie puja: no hay premio", WHITE);
       add(90, `Valor real ${money(reveal.total)}`, GOLD);
+      announce(`Lote desierto. El valor real era ${money(reveal.total)}.`);
     } else {
       add(44, isMe ? "¡GANASTE EL LOTE!" : `SE LO LLEVA ${winner?.nickname ?? "?"}`, isMe ? GOLD : WHITE);
       add(66, `Total ${money(reveal.total)}`, WHITE);
       add(86, `Pagado ${money(reveal.winningBid)}`, GREY);
       const profit = reveal.profit ?? 0;
+      const word = profit >= 0 ? "GANANCIA" : "PÉRDIDA";
       this.add
-        .image(196, 112, "ui", profit >= 0 ? "icon_profit" : "icon_loss")
+        .image(172, 112, "ui", profit >= 0 ? "icon_profit" : "icon_loss")
         .setDepth(DEPTH.overlay + 1);
       lines.push(
         addLabel(
           this,
-          240,
+          252,
           104,
-          `${profit >= 0 ? "+" : "−"}${money(Math.abs(profit))}`,
+          `${word} ${profit >= 0 ? "+" : "-"}${money(Math.abs(profit))}`,
           profit >= 0 ? GOLD : RED,
           [0.5, 0],
         ).setDepth(DEPTH.overlay + 1),
       );
       if (profit >= 0) audio.play("sfx_win");
       else audio.play("sfx_lose");
+      announce(
+        `${isMe ? "Ganas el lote" : `Se lo lleva ${winner?.nickname ?? "?"}`}. ` +
+          `Valor ${money(reveal.total)}, pagado ${money(reveal.winningBid)}. ` +
+          `${word} de ${money(Math.abs(profit))}.`,
+      );
     }
 
     panel.setAlpha(0);

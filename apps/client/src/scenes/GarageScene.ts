@@ -17,6 +17,8 @@ import {
   money,
 } from "../render/stage";
 import { socket } from "../net/socket";
+import { announce, prefersReducedMotion } from "../game/a11y";
+import { confirmAllIn } from "../game/overlays";
 
 const W = 480;
 
@@ -164,6 +166,7 @@ export class GarageScene extends Phaser.Scene {
       this.lotRoot?.add([shadow, sprite]);
 
       // idle bob, 1 px and snapped: tension without breaking the pixel grid
+      if (prefersReducedMotion()) return;
       this.tweens.add({
         targets: sprite,
         y: 191,
@@ -221,6 +224,40 @@ export class GarageScene extends Phaser.Scene {
     this.reasonLabel.setText(reason);
   }
 
+  /** Keyboard/assistive entry point: bid the minimum next amount. */
+  bidMinimum(): void {
+    this.tryBid(0);
+  }
+
+  /** "Todo": bid every euro the player owns, after an explicit confirmation. */
+  async allIn(): Promise<void> {
+    const auction = session.auction;
+    if (!auction || session.phase !== "AUCTION") return;
+    if (auction.highBidderId === session.playerId) {
+      this.showReason("Vas ganando");
+      return;
+    }
+    const amount = session.money();
+    if (amount < auction.minNextBid) {
+      this.showReason("Sin fondos");
+      return;
+    }
+    if (!auction.canBid) {
+      this.showReason("Espera tu turno");
+      return;
+    }
+    if (!(await confirmAllIn(amount))) return;
+    socket.send({ type: "C2S_BID", amount });
+    audio.play("sfx_bid");
+    announce(`Pujas todo tu dinero: ${money(amount)}.`);
+  }
+
+  private showReason(reason: string): void {
+    this.reasonLabel.setTint(reason === "Vas ganando" ? GOLD : RED);
+    this.reasonLabel.setText(reason);
+    announce(reason);
+  }
+
   private tryBid(index: number): void {
     const amount = this.bidAmounts[index];
     if (amount === undefined) return;
@@ -228,6 +265,7 @@ export class GarageScene extends Phaser.Scene {
     if (amount > session.money()) return;
     socket.send({ type: "C2S_BID", amount });
     audio.play("sfx_bid");
+    announce(`Pujas ${money(amount)}.`);
   }
 
   private flashBid(playerId: string, amount: number): void {

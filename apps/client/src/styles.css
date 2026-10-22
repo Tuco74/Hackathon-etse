@@ -163,3 +163,163 @@ canvas {
 #muteBtn:hover { border-color: var(--gold); }
 
 .player.offline { opacity: 0.45; }
+
+/* ---------- acciones de la ruleta (DOM) ---------- */
+
+#actions { align-items: center; }
+
+.action-label {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #cfc9d9;
+  align-self: center;
+}
+
+.action-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #cfc9d9;
+  align-self: center;
+}
+
+#actions button[aria-pressed="true"] {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+#actions button small {
+  opacity: 0.65;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+#actions .bet--red { background: #4a141f; }
+#actions .bet--black { background: #0b0910; }
+#actions .bet--green { background: #173327; }
+#actions .bet--red:hover { border-color: #e35d68; }
+#actions .bet--green:hover { border-color: #8fcf74; }
+
+/* ---------- botón de ayuda ---------- */
+
+#helpBtn {
+  position: absolute;
+  right: 14px;
+  bottom: 48px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  background: rgba(34, 29, 46, 0.9);
+  color: var(--ink);
+  border: 2px solid #4a3f5c;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+#helpBtn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ---------- diálogos (ayuda, confirmación de puja máxima) ---------- */
+
+dialog.dialog {
+  width: min(560px, 92vw);
+  max-height: 86vh;
+  padding: 18px 20px;
+  background: #221d2e;
+  color: var(--ink);
+  border: 2px solid #0b0910;
+  box-shadow: 8px 8px 0 rgba(11, 9, 16, 0.7), inset 2px 2px 0 #4d4560;
+  font-family: inherit;
+}
+
+dialog.dialog::backdrop { background: rgba(11, 9, 16, 0.82); }
+
+.dialog h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+
+.dialog h3 {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #a49cb2;
+}
+
+.dialog ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #cfc9d9;
+  display: grid;
+  gap: 4px;
+}
+
+.dialog dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 14px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.dialog dt {
+  color: var(--gold);
+  letter-spacing: 1px;
+}
+
+.dialog dd {
+  margin: 0;
+  color: #cfc9d9;
+}
+
+.dialog p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #cfc9d9;
+}
+
+.dialog__hint {
+  margin-top: 12px !important;
+  font-size: 10px !important;
+  color: #7d7589 !important;
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dialog button {
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 1px;
+  padding: 9px 14px;
+  background: #3a3349;
+  color: #f6f3fa;
+  border: 2px solid #0b0910;
+  cursor: pointer;
+}
+
+.dialog button:hover { border-color: var(--gold); color: var(--gold); }
+.dialog button:focus-visible { outline: 2px solid #ffd166; outline-offset: 2px; }
+
+.dialog button.dialog__primary {
+  background: var(--gold);
+  color: #1a1420;
+}
+
+.dialog button.dialog__primary:hover { background: #ffd166; color: #1a1420; }
+
+@media (max-width: 640px) {
+  #status { max-width: 92%; }
+  .action-label { flex-basis: 100%; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto; }
+}

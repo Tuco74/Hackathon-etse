@@ -28,6 +28,17 @@ class Session {
   rouletteEndsAt = 0;
   gameOver: GameOverMsg | null = null;
 
+  /** Player money at the end of each round (public data, for the final chart). */
+  moneyHistory: Array<{ round: number; money: Record<string, number> }> = [];
+  /** Every reveal, for best/worst purchase summaries. */
+  revealHistory: Array<{
+    round: number;
+    winnerId: string | null;
+    winningBid: number;
+    total: number;
+    profit: number | null;
+  }> = [];
+
   /** server clock minus local clock, estimated from PONG samples */
   clockOffset = 0;
   /** last gateway status for the connection banner */
@@ -92,6 +103,15 @@ class Session {
         this.phase = "REVEAL";
         this.reveal = msg;
         this.auction = null;
+        if (!this.revealHistory.some((entry) => entry.round === this.round)) {
+          this.revealHistory.push({
+            round: this.round,
+            winnerId: msg.winnerId,
+            winningBid: msg.winningBid,
+            total: msg.total,
+            profit: msg.profit,
+          });
+        }
         break;
       }
       case "S2C_ROULETTE_PHASE": {
@@ -126,6 +146,14 @@ class Session {
     // Own seat is identified by the DOM shell (roster delta on join), not by
     // nickname: two players may share a nickname.
 
+    // One money snapshot per round: the chart needs it and there is no
+    // historical endpoint in the protocol.
+    if (this.round > 0 && msg.phase !== "LOBBY" && !this.moneyHistory.some((s) => s.round === this.round)) {
+      const money: Record<string, number> = {};
+      for (const player of msg.players) money[player.id] = player.money;
+      this.moneyHistory.push({ round: this.round, money });
+    }
+
   }
 
   resetForNewMatch(): void {
@@ -136,6 +164,8 @@ class Session {
     this.rouletteResult = null;
     this.rouletteEndsAt = 0;
     this.gameOver = null;
+    this.moneyHistory = [];
+    this.revealHistory = [];
   }
 }
 
