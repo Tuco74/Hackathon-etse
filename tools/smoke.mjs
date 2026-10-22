@@ -46,6 +46,10 @@ let rouletteResults = 0;
 let rouletteBets = 0;
 let commitRevealOk = true;
 let bidsThisRound = { Ana: 0, Beto: 0 };
+const seenRoulette = new Set();
+const betPhases = new Set();
+const spinRequested = new Set();
+const seenResults = new Set();
 
 const bot = (ws, name) => (m) => {
   if (m.type === "S2C_ROUND_INTRO") {
@@ -57,14 +61,29 @@ const bot = (ws, name) => (m) => {
     send(ws, { type: "C2S_BID", amount: m.state.minNextBid });
   }
   if (m.type === "S2C_ROULETTE_PHASE") {
-    roulettePhases++;
+    if (!seenRoulette.has(m.hashSeed)) {
+      seenRoulette.add(m.hashSeed);
+      roulettePhases++;
+    }
     if (!/^[0-9a-f]{64}$/.test(m.hashSeed ?? "")) commitRevealOk = false;
-    // every player bets once; try one of each colour across phases
-    const betAmount = 10;
-    send(ws, { type: "C2S_ROULETTE_BET", choice: roulettePhases % 2 === 0 ? "red" : "black", amount: betAmount });
-    rouletteBets++;
+    // one bet per player and phase, even though the room re-broadcasts the snapshot
+    if (!betPhases.has(`${name}:${m.hashSeed}`)) {
+      betPhases.add(`${name}:${m.hashSeed}`);
+      send(ws, {
+        type: "C2S_ROULETTE_BET",
+        choice: roulettePhases % 2 === 0 ? "red" : "black",
+        amount: 10,
+      });
+      rouletteBets++;
+    }
+    // as soon as everyone has bet/passed, trigger the spin explicitly
+    if (m.readyToSpin && !spinRequested.has(m.hashSeed)) {
+      spinRequested.add(m.hashSeed);
+      send(a, { type: "C2S_ROULETTE_SPIN" });
+    }
   }
-  if (m.type === "S2C_ROULETTE_RESULT") {
+  if (m.type === "S2C_ROULETTE_RESULT" && !seenResults.has(m.seed)) {
+    seenResults.add(m.seed);
     rouletteResults++;
     if (m.result < 0 || m.result > 36 || !m.seed) commitRevealOk = false;
   }

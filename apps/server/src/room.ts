@@ -9,13 +9,16 @@ import {
 } from "@trastero/shared";
 import {
   afterReveal,
+  canSpinRoulette,
   canStart,
   minNextBid,
+  passRoulette,
   placeBid,
   placeRouletteBet,
   ranking,
   reveal,
   setReady,
+  spinRoulette,
   startGame,
   startMatch,
   tick,
@@ -259,8 +262,14 @@ export class Room {
         seconds: CONFIG.reconnect.seatReserveSec,
         phase: this.state.phase,
       });
+      // A disconnected player cannot decide: auto-pass so the rest can spin.
+      if (this.state.phase === "ROULETTE") {
+        const res = passRoulette(this.state, playerId);
+        if (res.ok) this.state = res.state;
+      }
     }
     this.broadcastRoomState();
+    if (this.state.phase === "ROULETTE") this.broadcastRoulettePhase();
   }
 
   // ------------------------------------------------------------------- inputs
@@ -336,7 +345,33 @@ export class Room {
           choice: msg.choice,
           amount: msg.amount,
         });
-        this.broadcastRoomState();
+        this.broadcastRoulettePhase();
+        break;
+      }
+      case "C2S_ROULETTE_PASS": {
+        const res = passRoulette(this.state, conn.playerId);
+        if (!res.ok) {
+          this.sendError(conn, (res.error ?? "PHASE_INVALID") as ErrorCode, "No puedes pasar", refId);
+          return;
+        }
+        this.state = res.state;
+        this.log.info("roulette_pass", { playerId: conn.playerId });
+        this.broadcastRoulettePhase();
+        break;
+      }
+      case "C2S_ROULETTE_SPIN": {
+        if (!canSpinRoulette(this.state)) {
+          this.sendError(
+            conn,
+            "SPIN_NOT_READY",
+            "Faltan jugadores por apostar o pasar",
+            refId,
+          );
+          return;
+        }
+        this.state = spinRoulette(this.state, this.rng, this.now);
+        this.log.info("roulette_spin_requested", { playerId: conn.playerId });
+        this.finishRoulette(this.now());
         break;
       }
       case "C2S_EMOTE": {
@@ -395,12 +430,7 @@ export class Room {
           winnerId: this.state.currentRound?.winnerId ?? null,
         });
       } else if (before === "ROULETTE" && this.state.phase !== "ROULETTE") {
-        this.broadcastRouletteResult();
-        if (this.state.phase === "AUCTION") {
-          // the new round is already running server-side; announce it after a pause
-          this.introDeadline = now + CONFIG.server.resultPauseMs;
-        }
-        this.phaseDeadline = 0;
+        this.finishRoulette(now);
       }
     } else if (this.state.phase === "REVEAL" && this.phaseDeadline > 0 && now >= this.phaseDeadline) {
       this.phaseDeadline = 0;
@@ -452,6 +482,15 @@ export class Room {
       }),
     };
     return changed;
+  }
+
+  private finishRoulette(now: number): void {
+    this.broadcastRouletteResult();
+    // the new round is already running server-side; announce it after a pause
+    if (this.state.phase === "AUCTION") this.introDeadline = now + CONFIG.server.resultPauseMs;
+    this.phaseDeadline = 0;
+    this.announceGameOverIfNeeded();
+    this.logPhaseChange();
   }
 
   private announceGameOverIfNeeded(): void {
@@ -595,6 +634,9 @@ export class Room {
       hashSeed: commitHash(rp.seed ?? ""),
       windowSec: Math.ceil(remainingMs / 1000),
       players: this.state.players.map((p) => ({ id: p.id, money: p.money })),
+      bets: rp.bets.map((b) => ({ playerId: b.playerId, choice: b.choice, amount: b.amount })),
+      passed: [...rp.passed],
+      readyToSpin: canSpinRoulette(this.state),
     };
   }
 

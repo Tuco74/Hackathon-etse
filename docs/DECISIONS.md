@@ -402,3 +402,20 @@ tras aplicar la pareja trampa ×10. El `room.ts` de B prevalece sobre el de #4/D
 La sala anuncia el lote siguiente `CONFIG.server.resultPauseMs` después del resultado
 (D-D03), con la subasta ya corriendo. Sin esa pausa, `S2C_ROULETTE_RESULT` y
 `S2C_ROUND_INTRO` llegaban en el mismo tick y el cliente saltaba la animación del giro.
+
+### D-B10 — La ruleta se gira cuando todos deciden (con botón y fallback)
+
+**Contexto:** el flujo anterior solo tenía un temporizador de 20 s y ningún botón de
+giro; tras apostar, el panel se vaciaba y parecía que la ruleta no respondía. Además,
+un jugador desconectado podía dejar la fase colgada hasta el final de la ventana.
+
+**Decisión:** cada jugador decide una vez con `C2S_ROULETTE_BET` o `C2S_ROULETTE_PASS`.
+`readyToSpin` es true cuando todos los conectados han decidido; entonces cualquier
+jugador puede `C2S_ROULETTE_SPIN` (si no, `SPIN_NOT_READY`). Si nadie pulsa, el servidor
+gira al agotar los 20 s. Un jugador que se desconecta durante la fase se auto-marca como
+`passed`. El snapshot `S2C_ROULETTE_PHASE` se reemite con `bets/passed/readyToSpin`.
+El giro sigue siendo server-side y el resultado deriva de la semilla comprometida.
+
+**Consecuencias:** el saldo se actualiza al recibir `S2C_ROULETTE_RESULT`/`ROOM_STATE` y
+la partida continúa tras `resultPauseMs`. La ruleta sigue siendo tras las rondas 5, 10 y
+15: la ronda 20 es el final (el enunciado del bug menciona 20, pero el GDD cierra ahí).

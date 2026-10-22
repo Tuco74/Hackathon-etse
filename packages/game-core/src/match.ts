@@ -261,6 +261,7 @@ export function afterReveal(state: MatchState, rng: Rng, now: Now): MatchState {
       seed,
       windowEndsAt: now() + CONFIG.roulette.windowSec * 1000,
       bets: [],
+      passed: [],
       spun: false,
       result: null,
       payouts: [],
@@ -278,6 +279,7 @@ export function placeRouletteBet(state: MatchState, playerId: string, choice: "r
   if (state.phase !== "ROULETTE" || !state.roulette) return fail("PHASE_INVALID");
   const rp = state.roulette;
   if (rp.spun) return fail("PHASE_INVALID");
+  if (rp.passed.includes(playerId)) return fail("ALREADY_PASSED");
   if (rp.bets.some(b => b.playerId === playerId)) return fail("ALREADY_BET");
   const player = state.players.find(p => p.id === playerId);
   if (!player) return fail("NOT_CONNECTED");
@@ -286,6 +288,33 @@ export function placeRouletteBet(state: MatchState, playerId: string, choice: "r
   const bet: RouletteBet = { playerId, choice, amount };
   const newRp: RoulettePhase = { ...rp, bets: [...rp.bets, bet] };
   return { ok: true, state: { ...state, roulette: newRp } };
+}
+
+/** A player may skip the roulette bet; it counts as decided for the spin gate. */
+export function passRoulette(state: MatchState, playerId: string): { ok: boolean; error?: string; state: MatchState } {
+  const fail = (error: string) => ({ ok: false, error, state });
+  if (state.phase !== "ROULETTE" || !state.roulette) return fail("PHASE_INVALID");
+  const rp = state.roulette;
+  if (rp.spun) return fail("PHASE_INVALID");
+  if (rp.bets.some(b => b.playerId === playerId)) return fail("ALREADY_BET");
+  if (rp.passed.includes(playerId)) return fail("ALREADY_PASSED");
+  const player = state.players.find(p => p.id === playerId);
+  if (!player) return fail("NOT_CONNECTED");
+  const newRp: RoulettePhase = { ...rp, passed: [...rp.passed, playerId] };
+  return { ok: true, state: { ...state, roulette: newRp } };
+}
+
+/**
+ * True when every connected player has decided (bet or passed). Disconnected
+ * players are auto-passed by the room, so a dropped player cannot block the spin.
+ */
+export function canSpinRoulette(state: MatchState): boolean {
+  const rp = state.roulette;
+  if (!rp || rp.spun) return false;
+  const connected = state.players.filter(p => p.connected);
+  return connected.every(p =>
+    rp.bets.some(b => b.playerId === p.id) || rp.passed.includes(p.id),
+  );
 }
 
 function rouletteColor(n: number): "red" | "black" | "green" {

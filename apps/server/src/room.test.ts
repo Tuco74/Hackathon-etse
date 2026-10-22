@@ -56,17 +56,24 @@ interface PlayResult {
   rouletteResults: { seed: string; result: number }[];
 }
 
+interface PlayOptions {
+  stopAtRoulette?: boolean;
+  requestSpin?: boolean;
+}
+
 /** Drives the fake clock and plays like a room full of simple bots. */
 function playMatch(
   room: Room,
   clock: ReturnType<typeof fakeClock>,
   conns: { conn: ReturnType<typeof makeConn>["conn"]; ws: FakeSocket }[],
+  options: PlayOptions = {},
   maxTicks = 6000,
 ): PlayResult {
   const cursors = new Map<FakeSocket, number>();
   for (const c of conns) cursors.set(c.ws, 0);
   const roundBids = new Map<string, number>();
   const betPlaced = new Set<string>();
+  const spinRequested = new Set<string>();
   const bidEvents = new Set<string>();
   const introSet = new Set<number>();
   const phaseMap = new Map<string, { hashSeed: string; windowSec: number }>();
@@ -76,6 +83,7 @@ function playMatch(
   for (let i = 0; i < maxTicks && !gameOver; i++) {
     clock.advance(CONFIG.server.tickMs);
     room.tick();
+    if (options.stopAtRoulette && room.phase === "ROULETTE") break;
 
     for (const c of conns) {
       const all = decode(c.ws);
@@ -103,6 +111,10 @@ function playMatch(
           if (!betPlaced.has(key)) {
             betPlaced.add(key);
             room.handle(c.conn, { type: "C2S_ROULETTE_BET", choice: "red", amount: 10 });
+          }
+          if (options.requestSpin && m.readyToSpin && !spinRequested.has(m.hashSeed)) {
+            spinRequested.add(m.hashSeed);
+            room.handle(conns[0]!.conn, { type: "C2S_ROULETTE_SPIN" });
           }
         }
         if (m.type === "S2C_ROULETTE_RESULT") {
@@ -163,7 +175,7 @@ describe("Room full match", () => {
     const { room, clock, conns } = setup(5, 5, 1234);
     startGame(room, conns);
 
-    const result = playMatch(room, clock, conns);
+    const result = playMatch(room, clock, conns, { requestSpin: true });
 
     expect(result.gameOver).not.toBeNull();
     expect(result.gameOver?.ranking).toHaveLength(5);
@@ -190,11 +202,51 @@ describe("Room full match", () => {
   it("resumes the next round after the round-5 roulette", () => {
     const { room, clock, conns } = setup(2, 6, 99);
     startGame(room, conns);
-    const result = playMatch(room, clock, conns);
+    const result = playMatch(room, clock, conns, { requestSpin: true });
 
     expect(result.intros).toEqual([1, 2, 3, 4, 5, 6]);
     expect(result.roulettePhases).toHaveLength(1);
     expect(result.gameOver).not.toBeNull();
+  });
+
+  it("blocks the spin until everyone decides, accepts pass and continues", () => {
+    const { room, clock, conns } = setup(2, 6, 777);
+    startGame(room, conns);
+    playMatch(room, clock, conns, { stopAtRoulette: true });
+    expect(room.phase).toBe("ROULETTE");
+
+    const [a, b] = conns as [
+      { conn: ReturnType<typeof makeConn>["conn"]; ws: FakeSocket },
+      { conn: ReturnType<typeof makeConn>["conn"]; ws: FakeSocket },
+    ];
+
+    // nobody has decided yet: the spin must be rejected with a visible code
+    room.handle(a.conn, { type: "C2S_ROULETTE_SPIN" });
+    expect(lastOf(a.ws, "S2C_ERROR")?.code).toBe("SPIN_NOT_READY");
+
+    room.handle(a.conn, { type: "C2S_ROULETTE_BET", choice: "red", amount: 10 });
+    room.handle(b.conn, { type: "C2S_ROULETTE_PASS" });
+
+    const phase = lastOf(a.ws, "S2C_ROULETTE_PHASE");
+    expect(phase?.bets).toHaveLength(1);
+    expect(phase?.passed).toContain(b.conn.playerId);
+    expect(phase?.readyToSpin).toBe(true);
+    const moneyBefore = phase?.players.find((p) => p.id === a.conn.playerId)?.money ?? 1000;
+
+    room.handle(a.conn, { type: "C2S_ROULETTE_SPIN" });
+    const spin = lastOf(a.ws, "S2C_ROULETTE_RESULT");
+    expect(spin).toBeDefined();
+    expect(spin?.result).toBeGreaterThanOrEqual(0);
+    expect(spin?.result).toBeLessThanOrEqual(36);
+
+    const payout = spin?.payouts.find((p) => p.playerId === a.conn.playerId);
+    expect(payout).toBeDefined();
+    expect(payout?.money).toBe(moneyBefore + (payout?.delta ?? 0));
+
+    // after the result pause, round 6 is announced (the match continues)
+    clock.advance(CONFIG.server.resultPauseMs + CONFIG.server.tickMs);
+    room.tick();
+    expect(lastOf(a.ws, "S2C_ROUND_INTRO")?.round).toBe(6);
   });
 
   it("never broadcasts another player's reconnect token", () => {

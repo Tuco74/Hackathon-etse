@@ -28,6 +28,8 @@ Snapshot tras reconectar, según `phase`:
 - `C2S_START_GAME` {}
 - `C2S_BID` { amount }
 - `C2S_ROULETTE_BET` { choice: red|black|green, amount }
+- `C2S_ROULETTE_PASS` {}
+- `C2S_ROULETTE_SPIN` {}
 - `C2S_EMOTE` { emoteId: 0..5 }
 - `C2S_PING` { clientTs }
 
@@ -38,7 +40,7 @@ Snapshot tras reconectar, según `phase`:
 - `S2C_AUCTION_STATE` { state: AuctionState }
 - `S2C_BID_EVENT` { playerId, amount, endsAt, extensionsUsed }
 - `S2C_REVEAL` { lotId, objects[{silhouetteId,name,value}], total, winnerId, winningBid, profit }
-- `S2C_ROULETTE_PHASE` { hashSeed, windowSec, players[{id,money}] }
+- `S2C_ROULETTE_PHASE` { hashSeed, windowSec, players[{id,money}], bets[{playerId,choice,amount}], passed[], readyToSpin }
 - `S2C_ROULETTE_RESULT` { seed, result, payouts[{playerId,delta,money}] }
 - `S2C_GAME_OVER` { ranking[], winnerId }
 - `S2C_ERROR` { code, message, refId? }
@@ -62,7 +64,8 @@ ROULETTE → ROUND_INTRO | GAME_OVER
 Códigos: `NOT_YOUR_TURN`, `INSUFFICIENT_FUNDS`, `BID_TOO_LOW`, `PHASE_INVALID`,
 `ROOM_FULL`, `INVALID_PAYLOAD`, `UNKNOWN_MESSAGE`, `ALREADY_BET`, `BET_TOO_LOW`,
 `BET_TOO_HIGH`, `NOT_CONNECTED`, `ROOM_NOT_FOUND`, `NOT_ALL_READY`, `RATE_LIMITED`,
-`RECONNECT_FAILED`, `SEAT_EXPIRED`, `NAME_TAKEN`, `ALREADY_JOINED`, `GAME_ALREADY_STARTED`.
+`RECONNECT_FAILED`, `SEAT_EXPIRED`, `NAME_TAKEN`, `ALREADY_JOINED`, `GAME_ALREADY_STARTED`,
+`ALREADY_PASSED`, `SPIN_NOT_READY`.
 
 ## Ruleta: commit–reveal verificable
 Al abrir la fase se publica `hashSeed = sha256(seed)` (64 hex). Al girar se revela `seed`
@@ -75,3 +78,22 @@ result = FNV1a32(seed) % 37        // FNV-1a de 32 bits, offset 0x811c9dc5, prim
 Cualquiera puede comprobar `sha256(seed) === hashSeed` y recalcular `result` con
 `rouletteResultFromSeed(seed)` de `@trastero/game-core`. El servidor no vuelve a tirar
 el dado en el giro: si lo hiciera, el compromiso no probaría nada.
+
+## Ruleta: flujo de interacción
+
+1. Al abrir la fase, cada jugador recibe `S2C_ROULETTE_PHASE` con `bets`, `passed` y
+   `readyToSpin`. El servidor reenvía ese snapshot tras cada apuesta/pase.
+2. Cada jugador decide una vez: `C2S_ROULETTE_BET` o `C2S_ROULETTE_PASS`. No se puede
+   cambiar ni combinar; un segundo intento devuelve `ALREADY_BET`/`ALREADY_PASSED`.
+3. Con todos los conectados decididos (`readyToSpin: true`), cualquier jugador puede
+   `C2S_ROULETTE_SPIN`. Si falta alguien → `SPIN_NOT_READY` (la UI mantiene el botón
+   deshabilitado con el motivo).
+4. Si nadie pulsa, el servidor gira automáticamente al agotar la ventana de 20 s.
+5. Al girar: `S2C_ROULETTE_RESULT { seed, result, payouts }`. El saldo se aplica en el
+   servidor y llega en el siguiente `S2C_ROOM_STATE`; `resultPauseMs` (4 s) después se
+   anuncia `S2C_ROUND_INTRO` de la ronda siguiente.
+6. Un jugador desconectado durante la fase se auto-marca como `passed` para no bloquear
+   a los demás.
+
+Las fases de ruleta son tras las rondas **5, 10 y 15**; la ronda 20 termina la partida
+(no hay ruleta final, ver `docs/GDD.md`).

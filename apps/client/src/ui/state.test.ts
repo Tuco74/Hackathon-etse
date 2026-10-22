@@ -160,6 +160,9 @@ describe("roulette", () => {
           { id: "p1", money: 1000 },
           { id: "p2", money: 1000 },
         ],
+        bets: [],
+        passed: [],
+        readyToSpin: false,
       },
       5_100,
     );

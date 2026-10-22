@@ -95,10 +95,12 @@ class Session {
         break;
       }
       case "S2C_ROULETTE_PHASE": {
+        const newPhase = this.roulettePhase?.hashSeed !== msg.hashSeed;
         this.phase = "ROULETTE";
         this.roulettePhase = msg;
         this.rouletteResult = null;
-        this.rouletteEndsAt = this.now() + msg.windowSec * 1000;
+        // Snapshots are re-broadcast on every bet/pass: don't reset the countdown.
+        if (newPhase) this.rouletteEndsAt = this.now() + msg.windowSec * 1000;
         break;
       }
       case "S2C_ROULETTE_RESULT": {
