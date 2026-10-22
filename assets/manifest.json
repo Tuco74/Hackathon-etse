@@ -19,7 +19,8 @@
   },
   "font": {
     "image": "atlases/font.png",
-    "data": "atlases/font.json",
+    "data": "atlases/font.xml",
+    "json": "atlases/font.json",
     "charWidth": 6,
     "lineHeight": 14
   },

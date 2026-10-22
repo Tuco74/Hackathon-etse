@@ -33,6 +33,19 @@ pnpm --filter @trastero/server run dev
 pnpm --filter @trastero/client run dev
 ```
 
+### Cliente sin servidor (mock)
+
+El cliente trae una sala simulada con bots y timers reales:
+
+```bash
+pnpm --filter @trastero/client run dev
+# http://localhost:5173/?mock=1        partida de 3 rondas, ruleta tras la 2
+# http://localhost:5173/?mock=1&roulette=1   adelanta la ruleta a la ronda 1
+```
+
+Es solo para desarrollo/demo: los valores viven en el chunk del mock y nunca se
+envían antes del revelado.
+
 ## Comandos
 
 | Comando | Qué hace |

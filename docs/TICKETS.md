@@ -53,9 +53,17 @@ Cada ticket indica dueño, ficheros que toca y Definition of Done.
 ## Workstream C — cliente (`apps/client`)
 
 - [x] **C1** Phaser 3 + Vite + lobby DOM + conexión WebSocket con deduplicación.
-- [x] **C2** Escena de trastero, siluetas placeholder, pujas, revelado, ruleta, fin de partida.
-- [ ] **C3** `net/mockServer.ts` para trabajar sin servidor (mock-first).
-- [ ] **C4** Interpolación de la cuenta atrás y snap a píxel en tweens.
+- [x] **C2** Escenas `Boot/Lobby/Garage/Reveal/Roulette/Results` con arte real de E, pujas,
+  revelado objeto a objeto, ruleta y ranking.
+- [x] **C3** `net/mockServer.ts` para trabajar sin servidor (mock-first):
+  `http://localhost:5173/?mock=1` (3 rondas, ruleta tras la 2; `&roulette=1` para la 1).
+- [x] **C4** Interpolación de la cuenta atrás desde `endsAt` del servidor con desfase de reloj
+  (PING/PONG + `ts` del sobre), snap a píxel en tweens y escalado entero.
+- [x] **C5** Carga de assets (`manifest.json`, atlas, fuente, salas, audio) con barra de carga,
+  reintento y montaje seguro en `/game-assets` (el `catalog.json` privado nunca entra en `dist`).
+- [ ] **C6** Coordinar con A: que `game-core` genere lotes desde `assets/catalog.json`
+  (hoy el cliente traduce `s_*`/nombres genéricos en `src/game/assetMap.ts`).
+  DoD: `silhouetteId` y `name` del protocolo son ids del catálogo de E; se borra el adaptador.
 
 ## Workstream D — UI/UX
 
@@ -65,6 +73,7 @@ Cada ticket indica dueño, ficheros que toca y Definition of Done.
 
 ## Workstream E — arte y audio
 
-- [ ] **E1** Atlas de siluetas (12) y objetos revelados, mismo contraste para todos.
-- [ ] **E2** Paleta cerrada de 32–48 colores documentada en `docs/ART.md`.
-- [ ] **E3** SFX chiptune (mazo, monedas, giro) con volumen y mute persistentes.
+- [x] **E1** Atlas de 22 objetos, 13 siluetas y 9 parejas trampa, mismo contraste para todas.
+- [x] **E2** Paleta cerrada de 46 colores documentada en `docs/ART.md`.
+- [x] **E3** SFX chiptune (mazo, monedas, giro, tensión) con volumen y mute persistentes.
+- [x] **E4** Manifiesto único + pipeline `pnpm assets:build`/`assets:validate`.

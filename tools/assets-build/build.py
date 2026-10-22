@@ -173,11 +173,13 @@ def main():
         f.write("\n")
 
     # ---- font --------------------------------------------------------
-    font_img, font_data, font_preview = pixel_font.build()
+    font_img, font_data, font_preview, font_xml = pixel_font.build()
     save(font_img, "atlases", "font.png")
     with open(os.path.join(ASSETS, "atlases", "font.json"), "w", encoding="utf-8") as f:
         json.dump(font_data, f, indent=2, ensure_ascii=False)
         f.write("\n")
+    with open(os.path.join(ASSETS, "atlases", "font.xml"), "w", encoding="utf-8") as f:
+        f.write(font_xml)
     save(font_preview, "src", "font_preview.png")
 
     # ---- backgrounds -------------------------------------------------
@@ -223,8 +225,10 @@ def main():
         })
         public_catalog.append({
             "id": entry["id"],
+            "name": entry["name"],
             "category": entry["category"],
             "silhouette": entry["silhouette"],
+            "sprite": f"obj_{entry['id']}",
             "hints": entry["hints"],
         })
     trap_pairs = [
@@ -252,7 +256,8 @@ def main():
                  "roundPixels": True, "antialias": False},
         "palette": {"file": "palette.json", "colours": len(PALETTE),
                     "silhouette": SILHOUETTE},
-        "font": {"image": "atlases/font.png", "data": "atlases/font.json",
+        "font": {"image": "atlases/font.png", "data": "atlases/font.xml",
+                 "json": "atlases/font.json",
                  "charWidth": pixel_font.CELL_W, "lineHeight": pixel_font.CELL_H},
         "atlases": {
             "objects": {"image": "atlases/objects.png", "data": "atlases/objects.json"},

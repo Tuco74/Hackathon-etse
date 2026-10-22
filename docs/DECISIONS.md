@@ -173,3 +173,81 @@ Unión cerrada en `protocol.ts` (`BID_TOO_LOW`, `INSUFFICIENT_FUNDS`, `PHASE_INV
 Se conservan los scripts `assets:build` / `assets:validate` (pipeline Python de E) y se añaden
 los scripts de Node (turbo, vitest, smoke, balance). El stub no declaraba workspaces; este
 commit introduce el monorepo real.
+
+## C — Cliente: motor, render y red
+
+### D-C01 — Escalado entero con `Scale.NONE` + zoom calculado
+
+**Contexto:** `Scale.FIT` escala de forma fraccionaria y emborrona el pixel art.
+
+**Decisión:** Phaser arranca en `Scale.NONE` con `zoom = floor(min(vw/480, vh/270))`
+(mínimo 1) y `autoCenter: CENTER_BOTH`; en `resize`/`orientationchange` se recalcula
+el zoom entero. La UI DOM (lobby/HUD/acciones) queda a tamaño de ventana.
+
+**Consecuencias:** nunca hay escalas fraccionarias ni blur; en 800×600 se juega a ×1
+y en 1920×1080 a ×4. `attachIntegerScaling()` centraliza el cálculo.
+
+### D-C02 — Assets servidos en `/game-assets` con lista blanca
+
+**Contexto:** `assets/` cuelga de la raíz del repo y contiene `catalog.json` con
+valores reales; un `publicDir` directo filtraría secretos al bundle.
+
+**Decisión:** plugin de Vite (`vite.config.ts`) que (a) sirve en dev solo ficheros
+permitidos bajo `/game-assets/` y (b) copia a `dist/game-assets/` únicamente los
+ficheros referenciados por `manifest.json` más `catalog.public.json`.
+
+**Consecuencias:** `apps/client/dist/game-assets/catalog.json` no existe y
+`tools/check-leak.mjs` sigue en verde. Los assets no se duplican en el repo.
+
+### D-C03 — `mockServer` con partida completa y parámetros de demo
+
+**Decisión:** `src/net/mockServer.ts` implementa el mismo protocolo que la sala
+(timers, bots, commit–reveal, desierto) en memoria. Se activa con `?mock=1`
+(3 rondas, ruleta tras la ronda 2; `&roulette=1` la adelanta). El módulo se carga
+con import dinámico solo en modo mock.
+
+**Consecuencias:** se puede desarrollar y demostrar el cliente sin B. Los valores
+del mock viven en ese chunk, nunca se emiten antes de `S2C_REVEAL` y no son los
+del catálogo real.
+
+### D-C04 — Reloj del servidor para la cuenta atrás
+
+**Decisión:** el socket estima el desfase con el `ts` de cada sobre y la mediana
+de los últimos PING/PONG (`session.clockOffset`). Las cuentas atrás se interpolan
+con `session.now()`; el cliente no decide timers ni fases.
+
+**Consecuencias:** la barra de tiempo no salta por la latencia. Cada mensaje se
+deduplica por `id`; al perder la conexión se reintenta con backoff y se encola
+lo pendiente. La reserva de asiento real sigue pendiente en B (no hay mensaje de
+reconexión en el protocolo).
+
+### D-C05 — Adaptador temporal de ids/nombres de A
+
+**Contexto:** `game-core` genera siluetas `s_box`, `s_lamp`… y nombres genéricos
+("Televisor CRT"), mientras el arte de E usa `sil_*`/`obj_*` y 22 objetos.
+
+**Decisión:** `src/game/assetMap.ts` traduce silueta y nombre a arte de E con
+fallback determinista. Vive en el cliente y no toca las reglas.
+
+**Consecuencias:** el cliente ya muestra arte real con el servidor actual. El
+ticket C6 propone que A adopte `assets/catalog.json`; entonces el adaptador se
+borra y el protocolo lleva ids de arte.
+
+### D-C06 — Ruleta: 16 sectores estilizados, resultado del servidor
+
+**Decisión:** la rueda de E es decorativa (16 sectores). El resultado (0–36) y
+los pagos vienen del servidor; el cliente solo elige un sector del color del
+resultado para animar y muestra número, color y delta. El color del número se
+usa únicamente para la animación.
+
+**Consecuencias:** no se duplica la lógica de pagos ni el RNG. Si E pinta una
+ruleta de 37 casillas, se puede mapear el sector exacto sin cambiar el protocolo.
+
+### D-C07 — Director de escenas por fase
+
+**Decisión:** un `Director` escucha los mensajes y cambia entre
+`lobby/garage/reveal/roulette/results` según la fase; las escenas leen el estado
+de `session` al crearse (nada se pierde si un mensaje llega durante el arranque).
+
+**Consecuencias:** no hay lógica de reglas en el cliente y el lobby DOM de D
+puede seguir viviendo por encima del canvas.

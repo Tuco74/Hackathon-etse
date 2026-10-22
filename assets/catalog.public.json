@@ -2,8 +2,10 @@
   "objects": [
     {
       "id": "tv_bw",
+      "name": "Televisor en blanco y negro",
       "category": "electronics",
       "silhouette": "sil_tv",
+      "sprite": "obj_tv_bw",
       "hints": [
         "pesa como un muerto",
         "huele a plástico viejo"
@@ -11,8 +13,10 @@
     },
     {
       "id": "tv_studio",
+      "name": "Monitor de estudio de los 80",
       "category": "electronics",
       "silhouette": "sil_tv",
+      "sprite": "obj_tv_studio",
       "hints": [
         "la carcasa parece buena",
         "el cristal está intacto"
@@ -20,8 +24,10 @@
     },
     {
       "id": "radio_plastic",
+      "name": "Radio de plástico",
       "category": "electronics",
       "silhouette": "sil_radio",
+      "sprite": "obj_radio_plastic",
       "hints": [
         "el dial gira",
         "suena a hueco"
@@ -29,8 +35,10 @@
     },
     {
       "id": "radio_bakelite",
+      "name": "Radio de baquelita",
       "category": "electronics",
       "silhouette": "sil_radio",
+      "sprite": "obj_radio_bakelite",
       "hints": [
         "el dial gira",
         "tiene un brillo raro"
@@ -38,8 +46,10 @@
     },
     {
       "id": "toolbox_rusty",
+      "name": "Caja de herramientas oxidada",
       "category": "tools",
       "silhouette": "sil_toolbox",
+      "sprite": "obj_toolbox_rusty",
       "hints": [
         "pesa lo suyo",
         "las bisagras están sueltas"
@@ -47,8 +57,10 @@
     },
     {
       "id": "toolbox_pro",
+      "name": "Maletín de herramientas pro",
       "category": "tools",
       "silhouette": "sil_toolbox",
+      "sprite": "obj_toolbox_pro",
       "hints": [
         "pesa lo suyo",
         "no se abre del todo"
@@ -56,8 +68,10 @@
     },
     {
       "id": "drill_corded",
+      "name": "Taladro con cable",
       "category": "tools",
       "silhouette": "sil_drill",
+      "sprite": "obj_drill_corded",
       "hints": [
         "el cable está enrollado",
         "tiene polvo de obra"
@@ -65,8 +79,10 @@
     },
     {
       "id": "chair_folding",
+      "name": "Silla plegable",
       "category": "furniture",
       "silhouette": "sil_chair",
+      "sprite": "obj_chair_folding",
       "hints": [
         "cojea un poco",
         "huele a sótano"
@@ -74,8 +90,10 @@
     },
     {
       "id": "chair_designer",
+      "name": "Silla de diseñador",
       "category": "furniture",
       "silhouette": "sil_chair",
+      "sprite": "obj_chair_designer",
       "hints": [
         "cojea un poco",
         "la madera pesa de más"
@@ -83,8 +101,10 @@
     },
     {
       "id": "lamp_tiffany",
+      "name": "Lámpara Tiffany",
       "category": "furniture",
       "silhouette": "sil_lamp",
+      "sprite": "obj_lamp_tiffany",
       "hints": [
         "el cristal tintinea",
         "está boca abajo"
@@ -92,8 +112,10 @@
     },
     {
       "id": "vase_repro",
+      "name": "Jarrón réplica",
       "category": "collectibles",
       "silhouette": "sil_vase",
+      "sprite": "obj_vase_repro",
       "hints": [
         "tiene una grieta",
         "el brillo es plano"
@@ -101,8 +123,10 @@
     },
     {
       "id": "vase_ming",
+      "name": "Jarrón Ming auténtico",
       "category": "collectibles",
       "silhouette": "sil_vase",
+      "sprite": "obj_vase_ming",
       "hints": [
         "tiene una grieta",
         "el brillo es profundo"
@@ -110,8 +134,10 @@
     },
     {
       "id": "comic_slab",
+      "name": "Cómic precintado",
       "category": "collectibles",
       "silhouette": "sil_comic",
+      "sprite": "obj_comic_slab",
       "hints": [
         "está rígido",
         "no se puede hojear"
@@ -119,8 +145,10 @@
     },
     {
       "id": "jacket_work",
+      "name": "Chaqueta de trabajo",
       "category": "clothing",
       "silhouette": "sil_jacket",
+      "sprite": "obj_jacket_work",
       "hints": [
         "huele a gasolina",
         "tiene manchas"
@@ -128,8 +156,10 @@
     },
     {
       "id": "jacket_leather",
+      "name": "Chaqueta de cuero",
       "category": "clothing",
       "silhouette": "sil_jacket",
+      "sprite": "obj_jacket_leather",
       "hints": [
         "huele a gasolina",
         "el forro está entero"
@@ -137,8 +167,10 @@
     },
     {
       "id": "sneakers_boxed",
+      "name": "Zapatillas sin estrenar",
       "category": "clothing",
       "silhouette": "sil_sneaker",
+      "sprite": "obj_sneakers_boxed",
       "hints": [
         "hay una caja",
         "la suela está limpia"
@@ -146,8 +178,10 @@
     },
     {
       "id": "trophy_participant",
+      "name": "Trofeo de participación",
       "category": "sports",
       "silhouette": "sil_trophy",
+      "sprite": "obj_trophy_participant",
       "hints": [
         "pesa menos de lo que parece",
         "la placa está en blanco"
@@ -155,8 +189,10 @@
     },
     {
       "id": "trophy_champions",
+      "name": "Trofeo de campeón",
       "category": "sports",
       "silhouette": "sil_trophy",
+      "sprite": "obj_trophy_champions",
       "hints": [
         "pesa menos de lo que parece",
         "la placa está grabada"
@@ -164,8 +200,10 @@
     },
     {
       "id": "mixer_basic",
+      "name": "Batidora básica",
       "category": "kitchen",
       "silhouette": "sil_mixer",
+      "sprite": "obj_mixer_basic",
       "hints": [
         "el vaso está suelto",
         "gira con ruido"
@@ -173,8 +211,10 @@
     },
     {
       "id": "mixer_vintage",
+      "name": "Batidora vintage",
       "category": "kitchen",
       "silhouette": "sil_mixer",
+      "sprite": "obj_mixer_vintage",
       "hints": [
         "el vaso está suelto",
         "el motor suena fino"
@@ -182,8 +222,10 @@
     },
     {
       "id": "crate_locked",
+      "name": "Caja cerrada con candado",
       "category": "mystery",
       "silhouette": "sil_crate",
+      "sprite": "obj_crate_locked",
       "hints": [
         "no se puede abrir",
         "pesa y no suena a hueco"
@@ -191,8 +233,10 @@
     },
     {
       "id": "crate_cardboard",
+      "name": "Caja de cartón cerrada",
       "category": "mystery",
       "silhouette": "sil_crate",
+      "sprite": "obj_crate_cardboard",
       "hints": [
         "no se puede abrir",
         "pesa y no suena a hueco"
