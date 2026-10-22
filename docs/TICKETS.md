@@ -59,9 +59,18 @@ Cada ticket indica dueño, ficheros que toca y Definition of Done.
 
 ## Workstream D — UI/UX
 
-- [ ] **D1** Tipografía pixel con `ñ` y acentos verificada en Chromium/Firefox.
-- [ ] **D2** Accesibilidad: nunca color como única información (formas + etiquetas).
-- [ ] **D3** Layout legible a 1280×720 y 1920×1080 sin blur.
+- [x] **D1** Tipografía pixel con `ñ` y acentos verificada en Chromium/Firefox.
+      Silkscreen OFL autoalojada (400/700) en `apps/client/src/ui/fonts/`.
+- [x] **D2** Accesibilidad: nunca color como única información (formas + etiquetas).
+      Ruleta con símbolo+etiqueta, ganancia/pérdida con icono+signo, foco visible,
+      `aria-live`, `prefers-reduced-motion`, botones deshabilitados con motivo.
+- [x] **D3** Layout legible a 1280×720 y 1920×1080 sin blur. Probado además a
+      900×600; la UI es DOM en píxeles reales sobre el canvas.
+- [x] **D4** Lobby completo (apodo, código, enlace, lista, listo, empezar).
+- [x] **D5** HUD de subasta (dinero, ronda, fase, timer, mejor puja, atajos).
+- [x] **D6** Revelado escalonado con total, pagado y neto; ruleta y ranking final
+      con gráfico de evolución y mejores/peores compras.
+- [x] **D7** `docs/UI.md` con pantallas, atajos, accesibilidad y límites conocidos.
 
 ## Workstream E — arte y audio
 
