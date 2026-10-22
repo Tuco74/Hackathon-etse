@@ -8,4 +8,5 @@
 - 64 tests, typecheck, build, anti-fuga y pruebas en navegador (mock y 2 pestañas).
 
 ## Pendiente
-- [ ] Commit y push de la integración final; CI; reiniciar :2567.
+- [x] Commit y push de la integración final (`1f1ee89`).
+- [x] CI verde y :2567 sirviendo el cliente nuevo (recargar pestañas).
