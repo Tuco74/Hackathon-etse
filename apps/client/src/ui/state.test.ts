@@ -175,6 +175,7 @@ describe("roulette", () => {
         type: "S2C_ROULETTE_RESULT",
         seed: "seed-1",
         result: 17,
+        skipped: false,
         payouts: [{ playerId: "p1", delta: 100, money: 1100 }],
       },
       5_200,

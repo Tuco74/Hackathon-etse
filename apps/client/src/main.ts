@@ -27,6 +27,7 @@ const roomCode = $<HTMLInputElement>("roomCode");
 const joinBtn = $<HTMLButtonElement>("joinBtn");
 const hud = $<HTMLDivElement>("hud");
 const playersEl = $<HTMLDivElement>("players");
+const leaderEl = $<HTMLDivElement>("leader");
 const statusEl = $<HTMLDivElement>("status");
 const actionsEl = $<HTMLDivElement>("actions");
 const errorEl = $<HTMLDivElement>("error");
@@ -118,6 +119,19 @@ function renderPlayers(players: PlayerPublic[]): void {
     .join("");
 }
 
+function updateLeader(players: PlayerPublic[]): void {
+  if (session.phase === "LOBBY" || session.phase === "GAME_OVER" || players.length === 0) {
+    leaderEl.classList.add("hidden");
+    return;
+  }
+  const top = players.reduce((best, p) => (p.money > best.money ? p : best), players[0]!);
+  leaderEl.classList.remove("hidden");
+  leaderEl.textContent =
+    top.id === session.playerId
+      ? "👑 VAS GANANDO"
+      : `👑 VA GANANDO: ${top.nickname} · ${top.money} €`;
+}
+
 function setPhaseStatus(msg: S2CMessage): void {
   switch (msg.type) {
     case "S2C_ROUND_INTRO":
@@ -137,7 +151,9 @@ function setPhaseStatus(msg: S2CMessage): void {
         : `Ruleta: ${msg.bets.length + msg.passed.length}/${msg.players.length} decididos`;
       break;
     case "S2C_ROULETTE_RESULT":
-      statusEl.textContent = `Resultado de la ruleta: ${msg.result}`;
+      statusEl.textContent = msg.skipped
+        ? "Nadie apostó: se salta la ruleta"
+        : `Resultado de la ruleta: ${msg.result}`;
       break;
     case "S2C_GAME_OVER":
       statusEl.textContent = "Fin de la partida";
@@ -321,6 +337,7 @@ function onRoomState(msg: Extract<S2CMessage, { type: "S2C_ROOM_STATE" }>): void
   }
   errorEl.textContent = "";
   renderPlayers(msg.players);
+  updateLeader(msg.players);
   announce(
     `Sala ${msg.roomCode}. Ronda ${msg.round} de ${msg.totalRounds}. Fase ${msg.phase}. ` +
       msg.players.map((player) => `${player.nickname} con ${player.money} euros`).join(", "),
@@ -358,6 +375,7 @@ async function join(): Promise<void> {
         mock: mockMode,
         mockRounds: 3,
         mockRoulette: Number(params.get("roulette") ?? 2) || 2,
+        mockNoBets: params.get("nobets") === "1",
       });
     }
     session.nickname = nick;
@@ -423,9 +441,9 @@ socket.on((msg) => {
       msg.code === "NAME_TAKEN" ||
       msg.code === "GAME_ALREADY_STARTED";
     const expired = msg.code === "RECONNECT_FAILED" || msg.code === "SEAT_EXPIRED";
-    errorEl.textContent = `${msg.message} (${msg.code})`;
+    errorEl.textContent = msg.message;
     window.setTimeout(() => {
-      if (errorEl.textContent === `${msg.message} (${msg.code})`) errorEl.textContent = "";
+      if (errorEl.textContent === msg.message) errorEl.textContent = "";
     }, 4000);
 
     if (expired || msg.code === "NAME_TAKEN") {
@@ -435,7 +453,7 @@ socket.on((msg) => {
     }
 
     if (expired || joinFailed) {
-      lobbyMsg.textContent = expired ? "La sesión caducó. Vuelve a entrar." : `${msg.message} (${msg.code})`;
+      lobbyMsg.textContent = expired ? "La sesión caducó. Vuelve a entrar." : msg.message;
       lobby.classList.remove("hidden");
       hud.classList.add("hidden");
       joinBtn.disabled = false;
@@ -507,7 +525,7 @@ window.addEventListener("online", () => socket.retryNow());
 
 muteBtn.addEventListener("click", () => {
   const muted = audio.toggle();
-  muteBtn.textContent = muted ? "SONIDO OFF" : "SONIDO ON";
+  muteBtn.textContent = muted ? "SONIDO SILENCIADO" : "SONIDO ACTIVADO";
   muteBtn.setAttribute("aria-pressed", String(muted));
 });
 helpBtn.addEventListener("click", () => openHelp());
@@ -515,7 +533,7 @@ helpBtn.addEventListener("click", () => openHelp());
 window.addEventListener("keydown", (event) => {
   if (event.key.toLowerCase() === "m" && !(event.target instanceof HTMLInputElement) && !anyDialogOpen()) {
     const muted = audio.toggle();
-    muteBtn.textContent = muted ? "SONIDO OFF" : "SONIDO ON";
+    muteBtn.textContent = muted ? "SONIDO SILENCIADO" : "SONIDO ACTIVADO";
     muteBtn.setAttribute("aria-pressed", String(muted));
   }
 });

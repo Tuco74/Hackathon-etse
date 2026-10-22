@@ -20,6 +20,7 @@ import type {
 interface MockOptions {
   rounds?: number;
   rouletteAfter?: number;
+  noBets?: boolean;
 }
 
 interface MockObject {
@@ -83,6 +84,7 @@ export function createMockServer(
 ): MockServer {
   const totalRounds = options.rounds ?? 3;
   const rouletteAfter = options.rouletteAfter ?? 2;
+  const noBets = options.noBets ?? false;
   const timers = new Set<number>();
   let stopped = false;
   let phase: GamePhase = "LOBBY";
@@ -286,7 +288,8 @@ export function createMockServer(
     // bots decide quickly so the demo can spin without waiting the full window
     later(900, () => {
       if (phase !== "ROULETTE") return;
-      if (moneyOf(BOTS[0]) >= 10) bets.set(BOTS[0], { choice: "red", amount: 10 });
+      if (!noBets && moneyOf(BOTS[0]) >= 10) bets.set(BOTS[0], { choice: "red", amount: 10 });
+      else passed.add(BOTS[0]);
       passed.add(BOTS[1]);
       emitRoulettePhase();
     });
@@ -311,8 +314,15 @@ export function createMockServer(
       }
       return { playerId: p.id, delta, money: p.money };
     });
-    emit({ type: "S2C_ROULETTE_RESULT", seed: hex(16), result, payouts });
+    const skipped = bets.size === 0;
+    emit({ type: "S2C_ROULETTE_RESULT", seed: hex(16), result, skipped, payouts });
     roomState();
+    if (skipped) {
+      // no bets: no wheel, no pause; straight to the next lot
+      if (round >= totalRounds) finishMatch();
+      else startRound();
+      return;
+    }
     later(REVEAL_MS, () => {
       if (round >= totalRounds) finishMatch();
       else startRound();
@@ -437,7 +447,8 @@ export function createMockServer(
           return;
         }
         passed.add(YOU);
-        emitRoulettePhase();
+        if (readyToSpin() && bets.size === 0) spin();
+        else emitRoulettePhase();
         break;
       }
       case "C2S_ROULETTE_SPIN": {

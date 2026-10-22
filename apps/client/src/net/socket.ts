@@ -30,6 +30,8 @@ interface ConnectOptions {
   mockRounds?: number;
   /** Mock only: round after which the roulette opens (default 2). */
   mockRoulette?: number;
+  /** Mock only: bots pass so nobody bets (demo of the skip path). */
+  mockNoBets?: boolean;
 }
 
 const MAX_QUEUE = 32;
@@ -63,7 +65,7 @@ export class GameSocket {
   async connect(url: string, opts: ConnectOptions = {}): Promise<void> {
     this.closedByUser = false;
     if (opts.mock) {
-      await this.connectMock(opts.mockRounds, opts.mockRoulette);
+      await this.connectMock(opts.mockRounds, opts.mockRoulette, opts.mockNoBets);
       return;
     }
     this.url = url;
@@ -71,13 +73,14 @@ export class GameSocket {
     await this.open();
   }
 
-  private async connectMock(rounds?: number, rouletteAfter?: number): Promise<void> {
+  private async connectMock(rounds?: number, rouletteAfter?: number, noBets?: boolean): Promise<void> {
     this.mockMode = true;
     this.setStatus("connecting");
     const { createMockServer } = await import("./mockServer");
     this.mock = createMockServer((msg) => this.deliver(msg, Date.now()), {
       ...(rounds ? { rounds } : {}),
       ...(rouletteAfter ? { rouletteAfter } : {}),
+      ...(noBets ? { noBets } : {}),
     });
     this.setStatus("open");
     this.flush();

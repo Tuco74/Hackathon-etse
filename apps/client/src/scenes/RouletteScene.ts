@@ -49,7 +49,7 @@ export class RouletteScene extends Phaser.Scene {
       this,
       W / 2,
       32,
-      phase ? `commit ${phase.hashSeed.slice(0, 20)}…` : "ruleta",
+      phase ? `compromiso ${phase.hashSeed.slice(0, 20)}…` : "ruleta",
       GREY,
       [0.5, 0],
     ).setDepth(DEPTH.hud);
@@ -88,6 +88,13 @@ export class RouletteScene extends Phaser.Scene {
 
   private spinTo(result: ResultMsg): void {
     if (this.spinning || this.shown) return;
+    if (result.skipped) {
+      // Nobody bet: the server advances immediately, no wheel animation.
+      this.shown = true;
+      this.countdown.setText("");
+      this.status.setText("Nadie apostó: se pasa a la siguiente ronda");
+      return;
+    }
     this.spinning = true;
     this.status.setText("Girando…");
     audio.play("sfx_spin");

@@ -31,6 +31,10 @@ const CATEGORY_ES: Record<string, string> = {
   sports: "Deportes",
   kitchen: "Cocina",
   mystery: "Misterio",
+  jewelry: "Joyería",
+  art: "Arte",
+  antique: "Antigüedades",
+  misc: "Varios",
 };
 
 /** Preview + ascending auction (workstream C). */

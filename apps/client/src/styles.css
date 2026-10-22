@@ -76,10 +76,28 @@ canvas {
   inset: 0;
   pointer-events: none;
   z-index: 5;
-  padding: 16px;
+  padding: 56px 16px 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+#leader {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  padding: 8px 18px;
+  background: var(--gold);
+  color: #1a1420;
+  border: 3px solid #1a1420;
+  box-shadow: 0 0 0 3px var(--gold), 0 4px 0 #1a1420;
+  font-size: 16px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 #toprow {
@@ -95,7 +113,6 @@ canvas {
 }
 
 #players { display: flex; gap: 10px; flex-wrap: wrap; flex: 1 1 auto; }
-
 .player {
   background: rgba(34, 29, 46, 0.85);
   border: 2px solid #4a3f5c;

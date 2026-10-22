@@ -41,7 +41,7 @@ Snapshot tras reconectar, según `phase`:
 - `S2C_BID_EVENT` { playerId, amount, endsAt, extensionsUsed }
 - `S2C_REVEAL` { lotId, objects[{silhouetteId,name,value}], total, winnerId, winningBid, profit }
 - `S2C_ROULETTE_PHASE` { hashSeed, windowSec, players[{id,money}], bets[{playerId,choice,amount}], passed[], readyToSpin }
-- `S2C_ROULETTE_RESULT` { seed, result, payouts[{playerId,delta,money}] }
+- `S2C_ROULETTE_RESULT` { seed, result, skipped, payouts[{playerId,delta,money}] }
 - `S2C_GAME_OVER` { ranking[], winnerId }
 - `S2C_ERROR` { code, message, refId? }
 - `S2C_PONG` { clientTs, serverTs }
@@ -97,3 +97,11 @@ el dado en el giro: si lo hiciera, el compromiso no probaría nada.
 
 Las fases de ruleta son tras las rondas **5, 10 y 15**; la ronda 20 termina la partida
 (no hay ruleta final, ver `docs/GDD.md`).
+
+### Sin apuestas: se salta la ruleta
+
+Si al cerrar la fase **ningún** jugador ha apostado (todos pasan), el servidor resuelve al
+instante: emite `S2C_ROULETTE_RESULT { skipped: true, payouts: [] }` y anuncia
+`S2C_ROUND_INTRO` de la siguiente ronda **sin animación ni pausa**. El cliente no gira la
+rueda y limpia el panel. Con al menos una apuesta válida, la animación y el revelado se
+muestran completos antes de continuar.

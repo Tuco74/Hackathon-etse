@@ -236,6 +236,7 @@ describe("Room full match", () => {
     room.handle(a.conn, { type: "C2S_ROULETTE_SPIN" });
     const spin = lastOf(a.ws, "S2C_ROULETTE_RESULT");
     expect(spin).toBeDefined();
+    expect(spin?.skipped).toBe(false);
     expect(spin?.result).toBeGreaterThanOrEqual(0);
     expect(spin?.result).toBeLessThanOrEqual(36);
 
@@ -246,6 +247,30 @@ describe("Room full match", () => {
     // after the result pause, round 6 is announced (the match continues)
     clock.advance(CONFIG.server.resultPauseMs + CONFIG.server.tickMs);
     room.tick();
+    expect(lastOf(a.ws, "S2C_ROUND_INTRO")?.round).toBe(6);
+  });
+
+  it("skips the wheel and advances instantly when nobody bets", () => {
+    const { room, clock, conns } = setup(2, 6, 303);
+    startGame(room, conns);
+    playMatch(room, clock, conns, { stopAtRoulette: true });
+    expect(room.phase).toBe("ROULETTE");
+
+    const [a, b] = conns as [
+      { conn: ReturnType<typeof makeConn>["conn"]; ws: FakeSocket },
+      { conn: ReturnType<typeof makeConn>["conn"]; ws: FakeSocket },
+    ];
+
+    room.handle(a.conn, { type: "C2S_ROULETTE_PASS" });
+    // B has not decided yet: the phase must stay open
+    expect(lastOf(a.ws, "S2C_ROULETTE_RESULT")).toBeUndefined();
+
+    room.handle(b.conn, { type: "C2S_ROULETTE_PASS" });
+
+    const result = lastOf(a.ws, "S2C_ROULETTE_RESULT");
+    expect(result?.skipped).toBe(true);
+    expect(result?.payouts).toEqual([]);
+    // no 4 s pause and no wheel: the next lot is already announced
     expect(lastOf(a.ws, "S2C_ROUND_INTRO")?.round).toBe(6);
   });
 

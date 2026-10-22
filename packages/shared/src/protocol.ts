@@ -190,6 +190,8 @@ export const S2C_ROULETTE_RESULT = z.object({
   type: z.literal("S2C_ROULETTE_RESULT"),
   seed: z.string(),
   result: z.number().int(), // 0-36
+  /** true when nobody bet: the client must skip the wheel animation */
+  skipped: z.boolean(),
   payouts: z.array(z.object({ playerId: z.string(), delta: z.number().int(), money: z.number().int() })),
 });
 export const S2C_GAME_OVER = z.object({

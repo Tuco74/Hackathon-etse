@@ -356,7 +356,13 @@ export class Room {
         }
         this.state = res.state;
         this.log.info("roulette_pass", { playerId: conn.playerId });
-        this.broadcastRoulettePhase();
+        if (canSpinRoulette(this.state) && (this.state.roulette?.bets.length ?? 0) === 0) {
+          // nobody bet: skip the wheel entirely and go straight to the next lot
+          this.state = spinRoulette(this.state, this.rng, this.now);
+          this.finishRoulette(this.now(), true);
+        } else {
+          this.broadcastRoulettePhase();
+        }
         break;
       }
       case "C2S_ROULETTE_SPIN": {
@@ -369,9 +375,10 @@ export class Room {
           );
           return;
         }
+        const skipped = (this.state.roulette?.bets.length ?? 0) === 0;
         this.state = spinRoulette(this.state, this.rng, this.now);
-        this.log.info("roulette_spin_requested", { playerId: conn.playerId });
-        this.finishRoulette(this.now());
+        this.log.info("roulette_spin_requested", { playerId: conn.playerId, skipped });
+        this.finishRoulette(this.now(), skipped);
         break;
       }
       case "C2S_EMOTE": {
@@ -430,7 +437,7 @@ export class Room {
           winnerId: this.state.currentRound?.winnerId ?? null,
         });
       } else if (before === "ROULETTE" && this.state.phase !== "ROULETTE") {
-        this.finishRoulette(now);
+        this.finishRoulette(now, (this.state.roulette?.bets.length ?? 0) === 0);
       }
     } else if (this.state.phase === "REVEAL" && this.phaseDeadline > 0 && now >= this.phaseDeadline) {
       this.phaseDeadline = 0;
@@ -484,10 +491,12 @@ export class Room {
     return changed;
   }
 
-  private finishRoulette(now: number): void {
-    this.broadcastRouletteResult();
-    // the new round is already running server-side; announce it after a pause
-    if (this.state.phase === "AUCTION") this.introDeadline = now + CONFIG.server.resultPauseMs;
+  private finishRoulette(now: number, skipped: boolean): void {
+    this.broadcastRouletteResult(skipped);
+    if (this.state.phase === "AUCTION") {
+      if (skipped) this.beginIntro(); // no bets -> no animation, no pause
+      else this.introDeadline = now + CONFIG.server.resultPauseMs;
+    }
     this.phaseDeadline = 0;
     this.announceGameOverIfNeeded();
     this.logPhaseChange();
@@ -645,22 +654,23 @@ export class Room {
     if (msg) this.broadcast(msg);
   }
 
-  private rouletteResultMsg(): Msg<"S2C_ROULETTE_RESULT"> | null {
+  private rouletteResultMsg(skipped: boolean): Msg<"S2C_ROULETTE_RESULT"> | null {
     const rp = this.state.roulette;
     if (!rp || rp.result === null) return null;
     return {
       type: "S2C_ROULETTE_RESULT",
       seed: rp.seed ?? "",
       result: rp.result,
+      skipped,
       payouts: rp.payouts,
     };
   }
 
-  private broadcastRouletteResult(): void {
-    const msg = this.rouletteResultMsg();
+  private broadcastRouletteResult(skipped: boolean): void {
+    const msg = this.rouletteResultMsg(skipped);
     if (!msg) return;
     this.broadcast(msg);
-    this.log.info("roulette_spin", { round: this.state.round, result: msg.result });
+    this.log.info("roulette_spin", { round: this.state.round, result: msg.result, skipped });
     this.broadcastRoomState();
   }
 
@@ -709,7 +719,7 @@ export class Room {
         const phase = this.roulettePhaseMsg();
         if (phase) this.send(conn, phase);
       } else {
-        const result = this.rouletteResultMsg();
+        const result = this.rouletteResultMsg((this.state.roulette?.bets.length ?? 0) === 0);
         if (result) this.send(conn, result);
       }
     } else if (this.state.phase === "GAME_OVER") {
