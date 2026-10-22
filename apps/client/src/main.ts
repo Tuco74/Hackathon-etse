@@ -31,17 +31,90 @@ const hud = $<HTMLDivElement>("hud");
 const playersEl = $<HTMLDivElement>("players");
 const actionsEl = $<HTMLDivElement>("actions");
 
-let me: string = localStorage.getItem("tw.playerId") ?? "";
+const SESSION_KEY = "tw.session";
+
+interface Session {
+  roomCode: string;
+  playerId: string;
+  token: string;
+}
+
+function readSession(): Session | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as Partial<Session>;
+    if (typeof s.roomCode !== "string" || typeof s.playerId !== "string" || typeof s.token !== "string") {
+      return null;
+    }
+    return { roomCode: s.roomCode, playerId: s.playerId, token: s.token };
+  } catch {
+    return null;
+  }
+}
+
+function writeSession(s: Session): void {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+}
+
+function clearSession(): void {
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem("tw.playerId");
+}
+
+let session = readSession();
+let me: string = session?.playerId ?? "";
 let isReady = false;
 let pendingJoin = false;
+let gameOver = false;
+let reconnectTimer: number | null = null;
 
 nickname.value = localStorage.getItem("tw.nickname") ?? "";
 const params = new URLSearchParams(location.search);
-roomCode.value = (params.get("room") ?? "ABCD").toUpperCase();
+roomCode.value = (params.get("room") ?? session?.roomCode ?? "ABCD").toUpperCase();
 
 function wsUrl(): string {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   return `${proto}://${location.host}/ws`;
+}
+
+async function tryReconnect(): Promise<boolean> {
+  if (!session) return false;
+  try {
+    if (!socket.connected) await socket.connect(wsUrl());
+    socket.send({
+      type: "C2S_RECONNECT",
+      roomCode: session.roomCode,
+      playerId: session.playerId,
+      token: session.token,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function scheduleReconnect(attempt = 1): void {
+  if (gameOver || !session || reconnectTimer !== null) return;
+  reconnectTimer = window.setTimeout(async () => {
+    reconnectTimer = null;
+    const sent = await tryReconnect();
+    if (!sent && attempt < 8 && session) scheduleReconnect(attempt + 1);
+  }, Math.min(1000 * attempt, 5000));
+}
+
+function enterGame(playerId: string, room: string): void {
+  me = playerId;
+  pendingJoin = false;
+  localStorage.setItem("tw.playerId", playerId);
+  try {
+    scene().setPlayerId(playerId);
+  } catch {
+    /* Phaser still booting: GameScene reads tw.playerId on create */
+  }
+  lobby.classList.add("hidden");
+  hud.classList.remove("hidden");
+  history.replaceState(null, "", `?room=${room}`);
 }
 
 joinBtn.addEventListener("click", async () => {
@@ -62,10 +135,7 @@ joinBtn.addEventListener("click", async () => {
     localStorage.setItem("tw.nickname", nick);
     pendingJoin = true;
     socket.send({ type: "C2S_JOIN", nickname: nick, roomCode: room });
-    lobbyMsg.textContent = "";
-    lobby.classList.add("hidden");
-    hud.classList.remove("hidden");
-    history.replaceState(null, "", `?room=${room}`);
+    // The lobby stays visible until S2C_JOINED confirms the seat.
   } catch {
     lobbyMsg.textContent = "No se pudo conectar al servidor";
     joinBtn.disabled = false;
@@ -97,33 +167,72 @@ window.addEventListener("tw:scene-ready", () => {
 socket.on((msg) => {
   fanOut(msg);
 
-  if (msg.type === "S2C_ERROR") {
-    const fatal = msg.code === "ROOM_FULL" || msg.code === "ROOM_NOT_FOUND";
-    const errBox = document.getElementById("error");
-    if (errBox) errBox.textContent = `${msg.message} (${msg.code})`;
-    lobbyMsg.textContent = fatal ? `${msg.message} (${msg.code})` : "";
-    if (fatal) {
-      lobby.classList.remove("hidden");
-      hud.classList.add("hidden");
-      joinBtn.disabled = false;
+  if (msg.type === "S2C_JOINED") {
+    session = { roomCode: msg.roomCode, playerId: msg.playerId, token: msg.token };
+    writeSession(session);
+    enterGame(msg.playerId, msg.roomCode);
+    return;
+  }
+
+  if (msg.type === "S2C_GAME_OVER") {
+    gameOver = true;
+    if (reconnectTimer !== null) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
     }
     return;
   }
 
-  if (msg.type === "S2C_ROOM_STATE") {
-    // the server assigns ids; identify ourselves by the join we just sent
-    if (!me) {
-      const nick = localStorage.getItem("tw.nickname") ?? nickname.value.trim();
-      const mine = msg.players.filter((p: PlayerPublic) => p.nickname === nick);
-      const fresh = mine[mine.length - 1];
-      if (pendingJoin && fresh) {
-        me = fresh.id;
-        pendingJoin = false;
-        scene().setPlayerId(me);
+  if (msg.type === "S2C_ERROR") {
+    const joinFailed =
+      msg.code === "ROOM_FULL" ||
+      msg.code === "ROOM_NOT_FOUND" ||
+      msg.code === "NAME_TAKEN" ||
+      msg.code === "GAME_ALREADY_STARTED";
+    const expired = msg.code === "RECONNECT_FAILED" || msg.code === "SEAT_EXPIRED";
+    const errBox = document.getElementById("error");
+    if (errBox) errBox.textContent = `${msg.message} (${msg.code})`;
+
+    if (expired) {
+      clearSession();
+      session = null;
+      lobby.classList.remove("hidden");
+      hud.classList.add("hidden");
+      joinBtn.disabled = false;
+      lobbyMsg.textContent = "La sesión caducó. Vuelve a entrar.";
+      return;
+    }
+
+    lobbyMsg.textContent = joinFailed ? `${msg.message} (${msg.code})` : "";
+    if (joinFailed) {
+      if (msg.code === "NAME_TAKEN") {
+        clearSession();
+        session = null;
       }
+      lobby.classList.remove("hidden");
+      hud.classList.add("hidden");
+      joinBtn.disabled = false;
     }
   }
 });
+
+socket.onClose(() => {
+  if (gameOver || !session) return;
+  lobbyMsg.textContent = "Conexión perdida. Reconectando...";
+  scheduleReconnect(1);
+});
+
+// A stored session means the tab was reloaded (or the network dropped): resume
+// the reserved seat instead of joining as a duplicate nickname.
+if (session && session.roomCode === roomCode.value) {
+  lobbyMsg.textContent = "Reconectando...";
+  void tryReconnect().then((sent) => {
+    if (!sent) {
+      lobbyMsg.textContent = "No se pudo reconectar. Reintentando...";
+      scheduleReconnect(1);
+    }
+  });
+}
 
 window.addEventListener("tw:room", (ev) => {
   const detail = (ev as CustomEvent).detail as {

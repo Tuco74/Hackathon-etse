@@ -5,6 +5,7 @@ type Handler = (msg: S2CMessage) => void;
 export class GameSocket {
   private ws: WebSocket | null = null;
   private handlers = new Set<Handler>();
+  private closeHandlers = new Set<() => void>();
   private queue: C2SMessage[] = [];
   private seen = new Set<string>();
 
@@ -18,6 +19,9 @@ export class GameSocket {
         resolve();
       };
       ws.onerror = () => reject(new Error("No se pudo conectar al servidor"));
+      ws.onclose = () => {
+        for (const h of this.closeHandlers) h();
+      };
       ws.onmessage = (ev) => {
         let env: { id?: string; payload?: S2CMessage } | null = null;
         try {
@@ -38,6 +42,12 @@ export class GameSocket {
   on(handler: Handler): () => void {
     this.handlers.add(handler);
     return () => this.handlers.delete(handler);
+  }
+
+  /** Fired when the transport drops (the UI decides whether to reconnect). */
+  onClose(handler: () => void): () => void {
+    this.closeHandlers.add(handler);
+    return () => this.closeHandlers.delete(handler);
   }
 
   send(msg: C2SMessage): void {
