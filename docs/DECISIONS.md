@@ -173,3 +173,82 @@ Unión cerrada en `protocol.ts` (`BID_TOO_LOW`, `INSUFFICIENT_FUNDS`, `PHASE_INV
 Se conservan los scripts `assets:build` / `assets:validate` (pipeline Python de E) y se añaden
 los scripts de Node (turbo, vitest, smoke, balance). El stub no declaraba workspaces; este
 commit introduce el monorepo real.
+
+---
+
+## B — Servidor y netcode
+
+### D-B01 — Reloj monótono inyectado
+
+**Contexto:** usar `Date.now()` en cada timer permite que un salto de hora del sistema
+abra o cierre subastas antes de tiempo.
+
+**Decisión:** `clock.ts` construye un reloj monótono en milisegundos epoch
+(`Date.now() - performance.now()` como origen). `Room` recibe `now()` y `tick()` es el
+único que evalúa deadlines; los tests inyectan un reloj falso y avanzan el tiempo a mano.
+
+**Consecuencias:** los `endsAt` siguen siendo epoch (el cliente compara con `Date.now()`),
+pero el servidor no depende del reloj de pared. Nada de `setTimeout` para reglas.
+
+### D-B02 — Reconexión por token privado, no por `playerId`
+
+**Contexto:** el `playerId` viaja en `S2C_ROOM_STATE` a toda la sala; usarlo como
+credencial permitiría a cualquiera robar un asiento.
+
+**Decisión:** al hacer `C2S_JOIN` se genera un token de 32 bytes (hex) y se envía solo a
+ese socket dentro de `S2C_JOINED` (mensaje nuevo, nunca broadcast). `C2S_RECONNECT`
+exige `playerId + token`, comparado con `timingSafeEqual`. La reserva dura 45 s; al
+expirar se borra el token y el asiento queda como desconectado permanente.
+
+**Consecuencias:** el cliente guarda `{roomCode, playerId, token}` en `localStorage`
+(clave `tw.session`) y puede recargar la pestaña sin duplicar apodo. Cambiar de sala
+invalida el asiento anterior al hacer `C2S_JOIN`.
+
+### D-B03 — Dedupe, rate limit y `refId` en el borde
+
+**Decisión:** `wire.ts` valida sobre y payload (el `type` de ambos debe coincidir), aplica
+un dedupe de 256 ids por conexión y un token bucket de 30 de ráfaga / 15 msg/s. Los
+errores devuelven `refId` con el `id` del mensaje culpable. `maxPayload` 16 KiB y
+heartbeat de 15 s.
+
+**Consecuencias:** una retransmisión de `C2S_BID` no se aplica dos veces y un flood no
+bloquea al resto de la sala. El límite es por conexión, no por IP: suficiente para el
+hackathon, no para internet abierta.
+
+### D-B04 — El resultado de la ruleta se deriva de la semilla comprometida
+
+**Contexto:** se publicaba `sha256(seed)` pero el giro volvía a llamar al RNG; el
+compromiso no demostraba nada.
+
+**Decisión:** `spinRoulette` calcula `result = FNV1a32(seed) % 37` con
+`rouletteResultFromSeed(seed)` (exportado desde `game-core`). El servidor solo hashea la
+semilla para el compromiso y la revela al girar.
+
+**Consecuencias:** el cliente o un auditor puede verificar ambos pasos sin confiar en el
+servidor. La distribución módulo 37 tiene un sesgo despreciable para una demo; si se
+quiere criptográfico puro, sustituir FNV por SHA-256 en `game-core` (requiere mover la
+función a `shared` para que el cliente la recalcule).
+
+### D-B05 — Ciclo de vida de salas y asientos
+
+**Decisión:** una sala sin conexiones se elimina en LOBBY/GAME_OVER o cuando todos los
+asientos expiraron; nunca se borra una partida en curso con reservas vivas. `Room.leave`
+solo actúa si el socket es el titular actual del asiento, para que un socket viejo no
+tumbe a la conexión nueva. El apodo es único por sala (case-insensitive) y el `ready`
+de los jugadores ya sentados se conserva al entrar alguien nuevo.
+
+**Consecuencias:** recargar dos pestañas con el mismo apodo da `NAME_TAKEN` en vez de
+dos jugadores duplicados.
+
+### D-B06 — La reconexión del cliente entra en el workstream B
+
+**Contexto:** el servidor ya soporta `C2S_RECONNECT`, pero sin cambios en el cliente la
+funcionalidad no se puede usar en el navegador y el criterio de aceptación no se podría
+demostrar.
+
+**Decisión:** se toca lo mínimo de `apps/client/src/net/socket.ts` (evento `onClose`) y
+`apps/client/src/main.ts` (sesión en `localStorage`, reconexión al cargar y con backoff).
+No se altera la escena ni la lógica de juego.
+
+**Consecuencias:** C debe revisar estos dos ficheros antes de continuar su workstream;
+cualquier rediseño del transporte tiene que conservar `S2C_JOINED` y el token.

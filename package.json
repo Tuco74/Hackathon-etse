@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "test:leak": "node tools/check-leak.mjs",
     "test:smoke": "node tools/smoke.mjs",
+    "test:reconnect": "node tools/reconnect-smoke.mjs",
     "sim:balance": "node tools/balance-sim/src/sim.js",
     "assets:build": "python3 tools/assets-build/build.py",
     "assets:validate": "python3 tools/assets-build/validate.py"

@@ -49,6 +49,7 @@ jobs:
             sleep 1
           done
           node tools/smoke.mjs
+          node tools/reconnect-smoke.mjs
 
   docker:
     runs-on: ubuntu-latest

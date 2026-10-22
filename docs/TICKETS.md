@@ -47,8 +47,19 @@ Cada ticket indica dueño, ficheros que toca y Definition of Done.
 - [x] **B1** Sala, join/leave, reserva de asiento 45 s.
 - [x] **B2** Timers de subasta, resolución y revelado automático.
 - [x] **B3** Commit–reveal de la ruleta.
-- [~] **B4** Endurecer validación: límite de mensajes por segundo y `refId` en errores.
-- [ ] **B5** Tests de integración de la sala (dobles de WebSocket) además del smoke.
+- [x] **B4** Endurecer validación: límite de mensajes por segundo y `refId` en errores.
+  Además: sobre validado (type de sobre = type de payload), dedupe por `id`,
+  `maxPayload` 16 KiB, heartbeat, `NAME_TAKEN` y `ALREADY_JOINED`.
+- [x] **B5** Tests de integración de la sala (dobles de WebSocket) además del smoke.
+  `apps/server/src/room.test.ts`: 5 clientes / 5 rondas, reconexión a mitad de subasta,
+  expiración de asiento, resync en REVEAL y barrido anti-fuga.
+  `apps/server/src/wire.test.ts`: fuzzing de sobres/payloads, dedupe y rate limit.
+- [x] **B6** Reconexión end-to-end: `C2S_RECONNECT` + `S2C_JOINED` + token privado,
+  snapshot por fase, expiración a los 45 s y `tools/reconnect-smoke.mjs` en CI.
+- [x] **B7** Commit–reveal verificable: `result = FNV1a32(seed) % 37`, comprobado contra
+  `sha256(seed)` en el test de partida completa.
+- [x] **B8** Reloj monótono inyectado (`clock.ts`), logs JSON por sala (`log.ts`) sin
+  secretos y apagado limpio con SIGINT/SIGTERM.
 
 ## Workstream C — cliente (`apps/client`)
 

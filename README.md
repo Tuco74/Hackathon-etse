@@ -33,6 +33,12 @@ pnpm --filter @trastero/server run dev
 pnpm --filter @trastero/client run dev
 ```
 
+### Reconexión
+
+Cada pestaña guarda `{roomCode, playerId, token}` en `localStorage` (`tw.session`). Si
+recargas o se cae la red, el cliente reconecta al mismo asiento durante **45 s** y recibe
+el snapshot de la fase actual; pasado ese plazo el asiento se libera.
+
 ## Comandos
 
 | Comando | Qué hace |
@@ -40,6 +46,7 @@ pnpm --filter @trastero/client run dev
 | `pnpm exec vitest run` | Tests unitarios + anti-fuga |
 | `node tools/check-leak.mjs` | Falla si el bundle del cliente filtra valores secretos |
 | `node tools/smoke.mjs` | E2E por WebSocket: 2 clientes, partida completa (requiere servidor con `GAME_ROUNDS=2`) |
+| `node tools/reconnect-smoke.mjs` | E2E de reconexión a mitad de subasta + payload basura (requiere servidor) |
 | `node tools/balance-sim/src/sim.js` | Simulación de 1.000 partidas con bots |
 | `pnpm --filter @trastero/client run build` | Build del cliente (Vite) |
 
