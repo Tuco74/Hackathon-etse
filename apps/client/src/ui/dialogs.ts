@@ -37,7 +37,7 @@ export class HelpDialog {
           el("dt", { text: "Enter" }),
           el("dd", { text: "Pujar la cantidad mínima" }),
           el("dt", { text: "1 / 2 / 3" }),
-          el("dd", { text: "Pujar mínimo, +25 € o +100 €" }),
+          el("dd", { text: "Sumar +10 €, +25 € o +50 € a la puja actual" }),
           el("dt", { text: "M" }),
           el("dd", { text: "Pujar todo tu dinero (pide confirmación)" }),
           el("dt", { text: "R / N / V" }),

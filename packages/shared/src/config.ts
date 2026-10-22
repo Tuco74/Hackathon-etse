@@ -12,7 +12,7 @@ export const CONFIG = {
   },
   auction: {
     minBid: 10,
-    minIncrement: 25,
+    minIncrement: 10,
     bidTimerSec: 12,
     maxExtensions: 3,
     openingBid: 0,

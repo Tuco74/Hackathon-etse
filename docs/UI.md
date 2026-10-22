@@ -36,7 +36,7 @@ de unirse recibe `ROOM_NOT_FOUND` porque la conexión aún no tiene sala).
 | Tecla | Acción |
 |---|---|
 | `Enter` | Pujar la cantidad mínima |
-| `1` `2` `3` | Mínima, +25 €, +100 € |
+| `1` `2` `3` | Sumar +10 €, +25 € o +50 € a la puja actual |
 | `M` | Pujar todo el dinero (confirmación) |
 | `R` `N` `V` | Ruleta: rojo, negro, verde |
 | `?` | Ayuda y atajos |

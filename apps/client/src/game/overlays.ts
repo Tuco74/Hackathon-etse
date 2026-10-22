@@ -36,7 +36,7 @@ function ensureHelp(): HTMLDialogElement {
     <h3>ATAJOS</h3>
     <dl>
       <dt>Enter</dt><dd>Pujar la cantidad mínima</dd>
-      <dt>1 / 2 / 3</dt><dd>Pujar mínimo, +25 € o +100 €</dd>
+      <dt>1 / 2 / 3</dt><dd>Sumar +10 €, +25 € o +50 € a la puja actual</dd>
       <dt>T</dt><dd>Pujar todo tu dinero (pide confirmación)</dd>
       <dt>R / N / V</dt><dd>En la ruleta: rojo, negro o verde</dd>
       <dt>?</dt><dd>Abrir esta ayuda</dd>

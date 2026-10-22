@@ -40,6 +40,7 @@ export class GarageScene extends Phaser.Scene {
   private bidsRoot: Phaser.GameObjects.Container | null = null;
 
   private roundLabel!: Phaser.GameObjects.BitmapText;
+  private currentBidLabel!: Phaser.GameObjects.BitmapText;
   private cashLabel!: Phaser.GameObjects.BitmapText;
   private timerLabel!: Phaser.GameObjects.BitmapText;
   private categoryLabel!: Phaser.GameObjects.BitmapText;
@@ -59,6 +60,11 @@ export class GarageScene extends Phaser.Scene {
     this.roundLabel = addLabel(this, 10, 9, "", GOLD).setDepth(DEPTH.hud + 1);
     this.add.image(152, 16, "ui", "icon_money").setDepth(DEPTH.hud + 1);
     this.cashLabel = addLabel(this, 162, 9, "", WHITE).setDepth(DEPTH.hud + 1);
+    // Persistent "current bid" readout: the auction is a live number, not just
+    // the last bid flash.
+    this.currentBidLabel = addLabel(this, 300, 9, "SIN PUJAS", GREY, [0.5, 0]).setDepth(
+      DEPTH.hud + 1,
+    );
     this.add.image(412, 16, "ui", "icon_clock").setDepth(DEPTH.hud + 1);
     this.timerLabel = addLabel(this, 470, 9, "", WHITE, [1, 0]).setDepth(DEPTH.hud + 1);
 
@@ -124,6 +130,11 @@ export class GarageScene extends Phaser.Scene {
     this.cashLabel.setText(money(session.money()));
 
     const auction = session.auction;
+    const bid = auction?.currentBid ?? 0;
+    const bidText = bid > 0 ? `PUJA ${money(bid)}` : "SIN PUJAS";
+    if (this.currentBidLabel.text !== bidText) this.currentBidLabel.setText(bidText);
+    this.currentBidLabel.setTint(bid > 0 ? GOLD : GREY);
+
     if (auction && session.phase === "AUCTION") {
       const left = Math.max(0, (auction.endsAt - session.now()) / 1000);
       this.timerLabel.setText(`${left.toFixed(1)}s`);
@@ -198,17 +209,16 @@ export class GarageScene extends Phaser.Scene {
     }
 
     const canBid = auction.canBid && session.money() >= auction.minNextBid;
-    const amounts = [
-      auction.minNextBid,
-      auction.minNextBid + CONFIG.auction.minIncrement,
-      auction.minNextBid + 100,
-    ];
+    // Buttons add to the current bid. The cheapest one (+10) is exactly the
+    // server's minimum increment, so it always passes validation.
+    const deltas = [10, 25, 50] as const;
+    const amounts = deltas.map((delta) => auction.currentBid + delta);
     this.bidAmounts = amounts;
 
     amounts.forEach((amount, index) => {
       const x = W / 2 + (index - 1) * 98;
       const affordable = amount <= session.money();
-      const button = new PixelButton(this, x, 240, `${money(amount)}`, {
+      const button = new PixelButton(this, x, 240, `+${money(deltas[index] ?? 0)}`, {
         w: 90,
         h: 22,
         frame: "button_bid",

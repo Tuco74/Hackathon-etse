@@ -64,10 +64,10 @@ describe("auction basics", () => {
     s = setReady(s, "a", true); s = setReady(s, "b", true);
     s = startGame(s, rngSeq([0.5]), () => 1000);
     s = placeBid(s, "a", 10, () => 1000).state;
-    const r = placeBid(s, "b", 20, () => 1000);
+    const r = placeBid(s, "b", 19, () => 1000);
     expect(r.ok).toBe(false);
     expect(r.error).toBe("BID_TOO_LOW");
-    const r2 = placeBid(s, "b", 35, () => 1000);
+    const r2 = placeBid(s, "b", 20, () => 1000);
     expect(r2.ok).toBe(true);
   });
 

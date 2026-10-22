@@ -52,7 +52,7 @@ describe("seconds", () => {
 describe("bidOptions", () => {
   it("builds the ladder from the server minimum", () => {
     const options = bidOptions(250, 1000, CONFIG.auction.minIncrement);
-    expect(options.map((o) => o.amount)).toEqual([250, 275, 350, 1000]);
+    expect(options.map((o) => o.amount)).toEqual([250, 260, 290, 1000]);
     expect(options[3]?.kind).toBe("max");
   });
 

@@ -5,7 +5,7 @@ Parámetros en packages/shared/src/config.ts. Lotes: valor total por banda de ro
 - Rondas 6-14: 400-1.800 €
 - Rondas 15-20: 700-3.000 €
 
-Objetos por lote: 2-5 (peso mayor a 3). Puja mín 10, incremento mín 25. Timer 12s, máx 3 prórrogas.
+Objetos por lote: 2-5 (peso mayor a 3). Puja mín 10, incremento mín 10 (botones +10/+25/+50). Timer 12s, máx 3 prórrogas.
 
 Ruleta: rojo/negro 1:1, verde 0 35:1, ventaja casa ~2.7%. Apuesta mín 10, máx todo el dinero. Ventana 20s.
 

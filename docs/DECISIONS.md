@@ -419,3 +419,13 @@ El giro sigue siendo server-side y el resultado deriva de la semilla comprometid
 **Consecuencias:** el saldo se actualiza al recibir `S2C_ROULETTE_RESULT`/`ROOM_STATE` y
 la partida continúa tras `resultPauseMs`. La ruleta sigue siendo tras las rondas 5, 10 y
 15: la ronda 20 es el final (el enunciado del bug menciona 20, pero el GDD cierra ahí).
+
+### D-D05 — Puja actual visible y botones incrementales
+
+La barra superior muestra de forma persistente `PUJA X €` (o `SIN PUJAS`) durante la
+subasta. Los tres botones inferiores pasan a ser incrementales: **+10 €, +25 € y
++50 €** sobre la puja actual (con 0 € de base abren en 10/25/50 €).
+
+Para que una puja de +10 € sea válida, `CONFIG.auction.minIncrement` baja de 25 a 10.
+El servidor sigue siendo la autoridad: rechaza cualquier importe por debajo de
+`currentBid + 10` y el cliente no calcula reglas, solo pinta los tres atajos.

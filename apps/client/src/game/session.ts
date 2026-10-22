@@ -1,4 +1,4 @@
-import type { AuctionState, GamePhase, LotPublic, PlayerPublic, S2CMessage } from "@trastero/shared";
+import { CONFIG, type AuctionState, type GamePhase, type LotPublic, type PlayerPublic, type S2CMessage } from "@trastero/shared";
 
 type RevealMsg = Extract<S2CMessage, { type: "S2C_REVEAL" }>;
 type RoulettePhaseMsg = Extract<S2CMessage, { type: "S2C_ROULETTE_PHASE" }>;
@@ -94,7 +94,7 @@ class Session {
             highBidderId: msg.playerId,
             endsAt: msg.endsAt,
             extensionsUsed: msg.extensionsUsed,
-            minNextBid: msg.amount + 25,
+            minNextBid: msg.amount + CONFIG.auction.minIncrement,
           };
         }
         break;
