@@ -53,6 +53,13 @@ const ERROR_TEXT: Partial<Record<ErrorCode, string>> = {
   BET_TOO_HIGH: "No puedes apostar dinero que no tienes.",
   INVALID_PAYLOAD: "El servidor no entendió ese botón. Prueba otra vez.",
   NOT_CONNECTED: "Conexión perdida con el trastero.",
+  ALREADY_PASSED: "Ya has pasado esta ruleta. No hay vuelta atrás.",
+  SPIN_NOT_READY: "Todavía falta alguien por apostar o pasar.",
+  SEAT_EXPIRED: "Tu asiento caducó. Vuelve a entrar en la sala.",
+  RECONNECT_FAILED: "No se pudo recuperar tu asiento. Vuelve a entrar.",
+  NAME_TAKEN: "Ese apodo ya está en uso en la sala.",
+  GAME_ALREADY_STARTED: "La partida ya ha empezado: espera a la siguiente.",
+  RATE_LIMITED: "Vas demasiado rápido. Respira un segundo.",
 };
 
 export function friendlyError(code: string, serverMessage: string): string {

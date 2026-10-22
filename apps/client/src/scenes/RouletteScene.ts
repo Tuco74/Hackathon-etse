@@ -2,11 +2,9 @@ import Phaser from "phaser";
 import type { S2CMessage } from "@trastero/shared";
 import { getManifest, onGameMessage } from "../game/bus";
 import { audio } from "../game/audio";
-import { announce, prefersReducedMotion } from "../game/a11y";
 import { session } from "../game/session";
 import { createBackdrop, unitForRound, type Backdrop } from "../render/backdrop";
-import { DEPTH, GOLD, GREY, RED, WHITE, addLabel, addPanel, money } from "../render/stage";
-import { CONFIG } from "@trastero/shared";
+import { DEPTH } from "../render/stage";
 
 const W = 480;
 
@@ -21,82 +19,37 @@ function colourOf(n: number): "red" | "black" | "green" {
 
 type ResultMsg = Extract<S2CMessage, { type: "S2C_ROULETTE_RESULT" }>;
 
-/** Roulette phase: stylised wheel, commit hash and server-authoritative result. */
+/** Stage roulette: the wheel spin. Bets, commit hash and payout are DOM. */
 export class RouletteScene extends Phaser.Scene {
   private backdrop: Backdrop | null = null;
   private wheel!: Phaser.GameObjects.Image;
-  private countdown!: Phaser.GameObjects.BitmapText;
-  private status!: Phaser.GameObjects.BitmapText;
   private spinning = false;
-  private shown = false;
-  private windowEnd = 0;
 
   constructor() {
     super("roulette");
   }
 
   create(): void {
-    const manifest = getManifest(this);
-    this.backdrop = createBackdrop(this, manifest, unitForRound(session.round || 1));
-
-    addPanel(this, 4, 4, 472, 24, "panel_dark").setDepth(DEPTH.hud);
-    addLabel(this, 10, 9, `RULETA · RONDA ${session.round}`, GOLD).setDepth(DEPTH.hud + 1);
-    this.countdown = addLabel(this, 470, 9, "", WHITE, [1, 0]).setDepth(DEPTH.hud + 1);
-
-    const phase = session.roulettePhase;
-    this.windowEnd = session.rouletteEndsAt || session.now() + CONFIG.roulette.windowSec * 1000;
-    addLabel(
-      this,
-      W / 2,
-      32,
-      phase ? `compromiso ${phase.hashSeed.slice(0, 20)}…` : "ruleta",
-      GREY,
-      [0.5, 0],
-    ).setDepth(DEPTH.hud);
+    this.backdrop = createBackdrop(this, getManifest(this), unitForRound(session.round || 1));
 
     this.wheel = this.add.image(W / 2, 142, "ui", "wheel").setScale(2).setDepth(DEPTH.lot);
     this.add.image(W / 2, 44, "ui", "pointer").setOrigin(0.5, 1).setScale(2).setDepth(DEPTH.lot + 1);
-
-    addPanel(this, 108, 240, 264, 26, "panel_dark").setDepth(DEPTH.hud);
-    this.status = addLabel(this, W / 2, 245, "Apuesta en el panel inferior", WHITE, [0.5, 0])
-      .setDepth(DEPTH.hud + 1);
 
     onGameMessage(this, (msg: S2CMessage) => {
       if (msg.type === "S2C_ROULETTE_RESULT") this.spinTo(msg);
     });
 
     if (session.rouletteResult) this.spinTo(session.rouletteResult);
-
-    this.time.addEvent({
-      delay: 100,
-      loop: true,
-      callback: () => this.tick(),
-    });
   }
 
   update(_time: number, delta: number): void {
     this.backdrop?.update(delta);
   }
 
-  private tick(): void {
-    if (this.shown) return;
-    const left = Math.max(0, (this.windowEnd - session.now()) / 1000);
-    this.countdown.setText(`${left.toFixed(1)}s`);
-    this.countdown.setTint(left <= 3 ? RED : WHITE);
-    if (left <= 0) this.status.setText("Girando…");
-  }
-
   private spinTo(result: ResultMsg): void {
-    if (this.spinning || this.shown) return;
-    if (result.skipped) {
-      // Nobody bet: the server advances immediately, no wheel animation.
-      this.shown = true;
-      this.countdown.setText("");
-      this.status.setText("Nadie apostó: se pasa a la siguiente ronda");
-      return;
-    }
+    // No bets: the server advances immediately, so there is no wheel to spin.
+    if (result.skipped || this.spinning) return;
     this.spinning = true;
-    this.status.setText("Girando…");
     audio.play("sfx_spin");
 
     const colour = colourOf(result.result);
@@ -109,53 +62,12 @@ export class RouletteScene extends Phaser.Scene {
     const sector = candidates[Math.floor(Math.random() * candidates.length)] ?? 0;
     const target = 360 * 5 - sector * (360 / sectors);
 
-    if (prefersReducedMotion()) {
-      this.wheel.setAngle(target);
-      this.showResult(result);
-      return;
-    }
-
     this.tweens.add({
       targets: this.wheel,
       angle: target,
       duration: 3200,
       ease: Phaser.Math.Easing.Cubic.Out,
-      onComplete: () => this.showResult(result),
+      onComplete: () => audio.play("sfx_roulette"),
     });
-  }
-
-  private showResult(result: ResultMsg): void {
-    this.shown = true;
-    audio.play("sfx_roulette");
-    const colour = colourOf(result.result);
-    const colourEs = colour === "red" ? "ROJO" : colour === "black" ? "NEGRO" : "VERDE 0";
-    const symbol = colour === "red" ? "◆" : colour === "black" ? "●" : "★";
-    const mine = result.payouts.find((p) => p.playerId === session.playerId);
-    const delta = mine?.delta ?? 0;
-
-    addPanel(this, 108, 208, 264, 58, "panel_dark").setDepth(DEPTH.overlay);
-    addLabel(this, W / 2, 212, `${result.result} · ${symbol} ${colourEs}`, GOLD, [0.5, 0]).setDepth(
-      DEPTH.overlay + 1,
-    );
-    const text =
-      mine === undefined
-        ? "No apostaste"
-        : delta === 0
-          ? "Apuesta devuelta"
-          : `${delta > 0 ? "+" : "-"}${money(Math.abs(delta))} · saldo ${money(mine.money)}`;
-    addLabel(this, W / 2, 232, text, delta > 0 ? GOLD : delta < 0 ? RED : GREY, [0.5, 0]).setDepth(
-      DEPTH.overlay + 1,
-    );
-    addLabel(this, 12, 252, `semilla ${result.seed.slice(0, 24)}…`, GREY).setDepth(
-      DEPTH.overlay + 1,
-    );
-    announce(
-      `Ruleta: ${result.result}, ${colourEs}. ` +
-        (mine === undefined
-          ? "No apostaste."
-          : delta === 0
-            ? "Apuesta devuelta."
-            : `${delta > 0 ? "Ganas" : "Pierdes"} ${money(Math.abs(delta))}. Saldo ${money(mine.money)}.`),
-    );
   }
 }

@@ -435,3 +435,42 @@ El servidor sigue siendo la autoridad: rechaza cualquier importe por debajo de
 acto (`skipped: true`), salta la animación y anuncia la ronda siguiente sin `resultPauseMs`.
 Con al menos una apuesta se mantiene el giro y la pausa de 4 s. El cliente respeta
 `skipped` y no anima. La UI muestra el líder fijo arriba (`👑 VAS GANANDO` / `VA GANANDO`).
+## Integración final C + D (PR de integración)
+
+### D-I01 — Phaser dibuja el escenario; el DOM dibuja todo lo legible
+
+**Contexto:** el merge de C sustituyó `index.html`, `main.ts` y `styles.css` por la
+versión de C y dejó la UI de D (`src/ui/*`) sin montar y sin estilos.
+
+**Decisión:** se recuperan `index.html` y `styles.css` de D (`10aaef3`) y
+`main.ts` pasa a: cargar manifiesto/catálogo → crear Phaser con las escenas de C →
+`mountUi({ socket })` para lobby/HUD/revelado/ruleta/resultados.
+
+Las escenas de C quedan como **solo escenario**: trastero, siluetas, volteo y
+rueda. Se eliminan de Phaser el HUD, los botones de puja, el panel de revelado,
+el resultado de ruleta y el ranking para no duplicar la UI de D.
+
+**Consecuencias:** una sola fuente de verdad visual por elemento; accesibilidad y
+tipografía de D; arte y animación de C/E. `session` (C) y el reducer de D se
+alimentan del mismo socket, así que escenas y DOM nunca se desincronizan.
+
+### D-I02 — Mock y audio en la integración
+
+**Decisión:** `?mock=1` preconecta el transporte mock antes de montar la UI, de
+modo que el lobby de D lo reutiliza sin abrir WebSocket. Los SFX de puja llegan
+por `S2C_BID_EVENT`; moneda, giro y resultado siguen en las escenas. El mute
+persistente de `audio.ts` queda accesible por API (falta botón en la UI de D).
+
+### D-INT05 — Integración final: UI de D sobre el escenario de C
+
+Se monta la interfaz DOM de D (`src/ui/*`) sobre las escenas de C, que quedan como
+escenario (trastero, siluetas, volteo, rueda). El estado de D se alimenta del mismo
+socket que `session` de C. Sobre esa base se reaplican los fixes de B:
+
+- Ruleta: `Pasar` envía `C2S_ROULETTE_PASS`; `Girar ahora` se habilita con
+  `readyToSpin` y envía `C2S_ROULETTE_SPIN`; `skipped` no anima ni espera.
+- Reconexión: `S2C_JOINED` aporta `playerId`/token, la sesión vive en `sessionStorage`
+  (una por pestaña) y se reanuda al recargar.
+- Líder: banner fijo `👑 VAS GANANDO` / `VA GANANDO: …` bajo la fila de jugadores.
+- Subasta: puja mínima + 10 €, atajos +25 € y +50 € (los tres botones de cc0ba3f).
+- Textos: 100 % español (`Intro` en vez de `Enter`, `Compromiso`, categorías traducidas).

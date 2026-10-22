@@ -103,6 +103,9 @@ function snapshotMoney(state: UiState): MoneySnapshot[] {
 
 export function reduce(state: UiState, msg: S2CMessage, now: number): UiState {
   switch (msg.type) {
+    case "S2C_JOINED":
+      return { ...state, meId: msg.playerId, roomCode: msg.roomCode };
+
     case "S2C_ROOM_STATE": {
       const next: UiState = {
         ...state,

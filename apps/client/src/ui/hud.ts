@@ -38,6 +38,7 @@ export class Hud {
   private readonly whyEl: HTMLElement;
   private readonly buttons: HTMLButtonElement[] = [];
   private readonly panel: HTMLElement;
+  private readonly leaderEl: HTMLElement;
 
   private state: UiState | null = null;
   private announcedAt: number | null = null;
@@ -49,7 +50,7 @@ export class Hud {
     this.phaseEl = el("span", { cls: "chip", text: "Conectando" });
     this.timerEl = el("span", { cls: "topbar__timer-value", text: "—" });
     this.timerBarEl = el("span", { cls: "timerbar__fill" });
-    this.roomEl = el("span", { cls: "topbar__room", text: "SALA ----" });
+    this.roomEl = el("span", { cls: "topbar__room", text: "----" });
 
     const topbar = el(
       "header",
@@ -117,14 +118,20 @@ export class Hud {
       this.whyEl,
       el("p", {
         cls: "bid__keys",
-        text: "Enter puja · 1/2/3 atajos · M todo · ? ayuda",
+        text: "Intro puja · 1/2/3 atajos · M todo · ? ayuda",
       }),
     );
+
+    this.leaderEl = el("div", {
+      cls: "leader hidden",
+      attrs: { role: "status", "aria-live": "polite" },
+    });
 
     this.el = el(
       "div",
       { cls: "hud" },
       topbar,
+      this.leaderEl,
       this.playersEl,
       this.panel,
       this.roomChip(),
@@ -146,7 +153,7 @@ export class Hud {
   }
 
   private updateRoomChip(): void {
-    this.roomEl.textContent = `SALA ${this.state?.roomCode ?? "----"}`;
+    this.roomEl.textContent = this.state?.roomCode ?? "----";
   }
 
   update(state: UiState): void {
@@ -165,6 +172,7 @@ export class Hud {
     this.phaseEl.dataset.phase = displayPhase;
     this.updateRoomChip();
     this.renderPlayers(state);
+    this.renderLeader(state);
     this.renderLot(state);
     this.renderBid(state);
     this.renderStatus(state);
@@ -174,6 +182,23 @@ export class Hud {
     const myTurnHigh = isHighBidder(state);
     const rows = state.players.map((player) => this.playerCard(state, player, myTurnHigh));
     this.playersEl.replaceChildren(...rows);
+  }
+
+  private renderLeader(state: UiState): void {
+    const show =
+      state.players.length > 0 && state.phase !== "LOBBY" && state.phase !== "GAME_OVER";
+    toggleClass(this.leaderEl, "hidden", !show);
+    if (!show) return;
+
+    const top = state.players.reduce((best, player) =>
+      player.money > best.money ? player : best,
+    );
+    setText(
+      this.leaderEl,
+      top.id === state.meId
+        ? "👑 VAS GANANDO"
+        : `👑 VA GANANDO: ${top.nickname} · ${money(top.money)}`,
+    );
   }
 
   private playerCard(state: UiState, player: PlayerPublic, myTurnHigh: boolean): HTMLElement {
@@ -247,8 +272,8 @@ export class Hud {
     // Amounts shown next to the buttons.
     const labels = [
       options[0]?.label ?? "Pujar",
-      `+${money(CONFIG.auction.minIncrement)}`,
-      `+${money(CONFIG.auction.minIncrement * 4)}`,
+      options[1]?.label ?? "+25 €",
+      options[2]?.label ?? "+50 €",
       `Todo (${money(cash(state))})`,
     ];
     this.buttons.forEach((button, index) => {

@@ -1,5 +1,6 @@
 import type { S2CMessage } from "@trastero/shared";
 import type { GameSocket } from "../net/socket";
+import { session } from "../game/session";
 import { ServerClock } from "./clock";
 import { cash, createState, joinRoom, reduce, type UiState } from "./state";
 import { el } from "./dom";
@@ -15,6 +16,37 @@ import { money } from "./format";
 function socketUrl(): string {
   const protocol = location.protocol === "https:" ? "wss" : "ws";
   return `${protocol}://${location.host}/ws`;
+}
+
+const SESSION_KEY = "tw.session";
+
+interface SavedSession {
+  roomCode: string;
+  playerId: string;
+  token: string;
+}
+
+function readSession(): SavedSession | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as Partial<SavedSession>;
+    if (typeof s.roomCode !== "string" || typeof s.playerId !== "string" || typeof s.token !== "string") {
+      return null;
+    }
+    return { roomCode: s.roomCode, playerId: s.playerId, token: s.token };
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(saved: SavedSession): void {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(saved));
+}
+
+function clearSession(): void {
+  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem("tw.playerId");
 }
 
 const IGNORED_ERRORS = new Set(["UNKNOWN_MESSAGE"]);
@@ -57,6 +89,8 @@ export class UiRoot {
     this.reveal = new Reveal();
     this.roulette = new Roulette({
       onBet: (choice, amount) => this.socket.send({ type: "C2S_ROULETTE_BET", choice, amount }),
+      onPass: () => this.socket.send({ type: "C2S_ROULETTE_PASS" }),
+      onSpin: () => this.socket.send({ type: "C2S_ROULETTE_SPIN" }),
       onAnnounce: (text) => this.announce(text),
     });
     this.results = new Results({
@@ -89,6 +123,7 @@ export class UiRoot {
     parent.append(this.layer, this.live, this.help.el, this.confirm.el, this.results.el);
     document.addEventListener("keydown", this.onKeyDown);
     this.loop();
+    void this.resumeSession();
   }
 
   /** Entry point for messages wired by ui/index.ts (socket + scene bus). */
@@ -97,6 +132,18 @@ export class UiRoot {
   }
 
   private onMessage(message: S2CMessage): void {
+    if (message.type === "S2C_JOINED") {
+      session.playerId = message.playerId;
+      session.token = message.token;
+      session.roomCode = message.roomCode;
+      saveSession({
+        roomCode: message.roomCode,
+        playerId: message.playerId,
+        token: message.token,
+      });
+      this.clock.start();
+    }
+
     if (message.type === "S2C_PONG") {
       this.clock.onPong(message.clientTs, message.serverTs);
       return;
@@ -114,7 +161,32 @@ export class UiRoot {
   private onError(code: string, serverMessage: string): void {
     if (IGNORED_ERRORS.has(code)) return;
 
-    if (code === "ALREADY_BET") this.roulette.resetPending();
+    if (code === "RECONNECT_FAILED" || code === "SEAT_EXPIRED") {
+      clearSession();
+      session.playerId = "";
+      session.token = "";
+      this.state = createState();
+      this.lobby.showEntryError("La sesión caducó. Vuelve a entrar.");
+      this.apply(this.state);
+      return;
+    }
+
+    if (code === "NAME_TAKEN" || code === "GAME_ALREADY_STARTED") {
+      clearSession();
+      this.state = createState();
+      this.lobby.showEntryError(friendlyError(code, serverMessage));
+      this.apply(this.state);
+      return;
+    }
+
+    if (
+      code === "ALREADY_BET" ||
+      code === "ALREADY_PASSED" ||
+      code === "SPIN_NOT_READY" ||
+      code.startsWith("BET_")
+    ) {
+      this.roulette.resetPending();
+    }
     this.toasts.push(friendlyError(code, serverMessage), { kind: "error" });
 
     const fatal = code === "ROOM_FULL" || code === "ROOM_NOT_FOUND";
@@ -127,7 +199,13 @@ export class UiRoot {
 
   private async join(nickname: string, code: string): Promise<void> {
     try {
-      if (!this.socket.connected) await this.socket.connect(socketUrl());
+      if (!this.socket.connected) {
+        // An explicit join starts a new seat: don't let onopen resume the old one.
+        clearSession();
+        session.playerId = "";
+        session.token = "";
+        await this.socket.connect(socketUrl());
+      }
       this.state = joinRoom(this.state, nickname, code);
       this.socket.send({ type: "C2S_JOIN", nickname, roomCode: code });
       // Only ping the clock once the server knows our room: a ping before the
@@ -136,6 +214,24 @@ export class UiRoot {
       history.replaceState(null, "", `?room=${encodeURIComponent(code)}`);
     } catch {
       this.lobby.showEntryError("No se pudo conectar al servidor. ¿Está arrancado?");
+    }
+  }
+
+  /** Reload/lost connection: resume the reserved seat (the socket sends C2S_RECONNECT). */
+  private async resumeSession(): Promise<void> {
+    const saved = readSession();
+    if (!saved) return;
+    const wanted = (new URLSearchParams(location.search).get("room") ?? saved.roomCode).toUpperCase();
+    if (wanted !== saved.roomCode.toUpperCase()) return;
+
+    session.playerId = saved.playerId;
+    session.token = saved.token;
+    session.roomCode = saved.roomCode;
+    try {
+      if (!this.socket.connected) await this.socket.connect(socketUrl());
+      this.clock.start();
+    } catch {
+      clearSession();
     }
   }
 

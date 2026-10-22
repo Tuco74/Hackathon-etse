@@ -16,6 +16,8 @@ import { icon } from "./icons";
 
 export interface RouletteOptions {
   onBet(choice: RouletteColour, amount: number): void;
+  onPass(): void;
+  onSpin(): void;
   onAnnounce(text: string): void;
 }
 
@@ -34,6 +36,7 @@ export class Roulette {
   private readonly whyEl: HTMLElement;
   private readonly colourButtons = new Map<RouletteColour, HTMLButtonElement>();
   private readonly passBtn: HTMLButtonElement;
+  private readonly spinBtn: HTMLButtonElement;
   private readonly resultNumberEl: HTMLElement;
   private readonly resultColourEl: HTMLElement;
   private readonly resultDeltaEl: HTMLElement;
@@ -96,6 +99,19 @@ export class Roulette {
       on: { click: () => this.pass() },
     });
 
+    this.spinBtn = el("button", {
+      cls: "btn btn--bid btn--small",
+      text: "Girar (esperando…)",
+      attrs: { type: "button", title: "Todos deben apostar o pasar" },
+      on: {
+        click: () => {
+          this.spinBtn.disabled = true;
+          setText(this.spinBtn, "Girando…");
+          this.options.onSpin();
+        },
+      },
+    });
+
     this.bettingPane = el(
       "div",
       { cls: "roulette__betting" },
@@ -124,6 +140,7 @@ export class Roulette {
       icon("pointer", 3),
       el("p", { cls: "roulette__waiting-text", text: "" }),
       changeMind,
+      this.spinBtn,
       el("p", { cls: "hint", text: "La apuesta no se puede cambiar una vez enviada." }),
     );
 
@@ -225,6 +242,7 @@ export class Roulette {
       this.waitingPane.querySelector(".roulette__waiting-text") as HTMLElement,
       "Has pasado. Otros están tentando a la suerte.",
     );
+    this.options.onPass();
   }
 
   /** Keyboard shortcut entry point (r / n / v). */
@@ -284,6 +302,13 @@ export class Roulette {
     }
     setText(this.hashEl, `Compromiso del giro: ${phase.hashSeed.slice(0, 16)}…`);
     this.hashEl.title = phase.hashSeed;
+    // The server re-broadcasts the phase after every bet/pass: keep the spin
+    // button in sync without resetting the local amount or the countdown.
+    this.spinBtn.disabled = !phase.readyToSpin;
+    setText(this.spinBtn, phase.readyToSpin ? "Girar ahora" : "Girar (esperando…)");
+    this.spinBtn.title = phase.readyToSpin
+      ? "Todos han decidido: lanza la ruleta"
+      : "Espera a que todos apuesten o pasen";
   }
 
   private defaultAmount(state: UiState): number {
@@ -326,6 +351,20 @@ export class Roulette {
   }
 
   private renderResult(state: UiState, result: RouletteResultMessage): void {
+    if (result.skipped) {
+      setText(this.timerEl, "");
+      setText(this.resultNumberEl, "—");
+      this.resultColourEl.className = "chip";
+      setText(this.resultColourEl, "Sin apuestas");
+      setText(this.resultDeltaEl, "Nadie apostó: se salta la ruleta.");
+      this.resultDeltaEl.className = "roulette__delta";
+      this.payoutsEl.replaceChildren();
+      setText(this.seedEl, "");
+      this.setMode("result");
+      this.options.onAnnounce("Nadie apostó: se salta la ruleta.");
+      return;
+    }
+
     const colour = rouletteColour(result.result);
     setText(this.timerEl, "");
     setText(this.resultNumberEl, String(result.result));
@@ -394,6 +433,7 @@ export class Roulette {
     if (left <= 0) {
       for (const button of this.colourButtons.values()) button.disabled = true;
       this.passBtn.disabled = true;
+      this.spinBtn.disabled = true;
       setText(this.whyEl, "Apuestas cerradas. La bola ya está rodando.");
       toggleClass(this.whyEl, "hidden", false);
     }

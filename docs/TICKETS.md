@@ -102,7 +102,7 @@ Cada ticket indica dueño, ficheros que toca y Definition of Done.
 - [x] **D6** Revelado escalonado con total, pagado y neto; ruleta y ranking final
       con gráfico de evolución y mejores/peores compras.
 - [x] **D7** `docs/UI.md` con pantallas, atajos, accesibilidad y límites conocidos.
-- [ ] **D8** Reconciliar la UI DOM de D con el cliente de escenas de C. En `main`
+- [x] **D8** Reconciliar la UI DOM de D con el cliente de escenas de C. En `main`
   la capa activa es la de C (escenas Phaser + shell DOM propia); `src/ui/*` de D
   queda en el árbol como referencia y sus tests siguen verdes. Decidir si se
   reengancha (p. ej. HUD/accesibilidad) o se retira antes de la entrega.

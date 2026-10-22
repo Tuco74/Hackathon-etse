@@ -105,10 +105,14 @@ export interface BidOption {
  */
 export function bidOptions(minNextBid: number, cash: number, increment: number): BidOption[] {
   const base = Math.max(0, Math.round(minNextBid));
+  // `base` is already the server minimum (current + increment). The extra
+  // buttons are the absolute +25/+50 steps requested by the auction UI.
+  const step25 = base + Math.max(0, 25 - increment);
+  const step50 = base + Math.max(0, 50 - increment);
   const options: BidOption[] = [
     { amount: base, label: base > 0 ? `Pujar ${money(base)}` : "Abrir con 10 €", kind: "primary" },
-    { amount: base + increment, label: `+${money(increment)}`, kind: "plus" },
-    { amount: base + increment * 4, label: `+${money(increment * 4)}`, kind: "plus" },
+    { amount: step25, label: "+25 €", kind: "plus" },
+    { amount: step50, label: "+50 €", kind: "plus" },
   ];
   const max = Math.max(0, Math.round(cash));
   if (max >= base) {

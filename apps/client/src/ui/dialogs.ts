@@ -34,7 +34,7 @@ export class HelpDialog {
         el(
           "dl",
           { cls: "keys" },
-          el("dt", { text: "Enter" }),
+          el("dt", { text: "Intro" }),
           el("dd", { text: "Pujar la cantidad mínima" }),
           el("dt", { text: "1 / 2 / 3" }),
           el("dd", { text: "Sumar +10 €, +25 € o +50 € a la puja actual" }),
