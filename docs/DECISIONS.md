@@ -402,3 +402,29 @@ tras aplicar la pareja trampa ×10. El `room.ts` de B prevalece sobre el de #4/D
 La sala anuncia el lote siguiente `CONFIG.server.resultPauseMs` después del resultado
 (D-D03), con la subasta ya corriendo. Sin esa pausa, `S2C_ROULETTE_RESULT` y
 `S2C_ROUND_INTRO` llegaban en el mismo tick y el cliente saltaba la animación del giro.
+
+## Integración final C + D (PR de integración)
+
+### D-I01 — Phaser dibuja el escenario; el DOM dibuja todo lo legible
+
+**Contexto:** el merge de C sustituyó `index.html`, `main.ts` y `styles.css` por la
+versión de C y dejó la UI de D (`src/ui/*`) sin montar y sin estilos.
+
+**Decisión:** se recuperan `index.html` y `styles.css` de D (`10aaef3`) y
+`main.ts` pasa a: cargar manifiesto/catálogo → crear Phaser con las escenas de C →
+`mountUi({ socket })` para lobby/HUD/revelado/ruleta/resultados.
+
+Las escenas de C quedan como **solo escenario**: trastero, siluetas, volteo y
+rueda. Se eliminan de Phaser el HUD, los botones de puja, el panel de revelado,
+el resultado de ruleta y el ranking para no duplicar la UI de D.
+
+**Consecuencias:** una sola fuente de verdad visual por elemento; accesibilidad y
+tipografía de D; arte y animación de C/E. `session` (C) y el reducer de D se
+alimentan del mismo socket, así que escenas y DOM nunca se desincronizan.
+
+### D-I02 — Mock y audio en la integración
+
+**Decisión:** `?mock=1` preconecta el transporte mock antes de montar la UI, de
+modo que el lobby de D lo reutiliza sin abrir WebSocket. Los SFX de puja llegan
+por `S2C_BID_EVENT`; moneda, giro y resultado siguen en las escenas. El mute
+persistente de `audio.ts` queda accesible por API (falta botón en la UI de D).

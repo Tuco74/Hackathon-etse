@@ -3,32 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Trastero Wars</title>
+    <meta name="theme-color" content="#14111d" />
+    <meta
+      name="description"
+      content="Trastero Wars: subastas de trasteros multijugador. Compra a ciegas y reza en el revelado."
+    />
+    <title>Trastero Wars · subastas de trasteros</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="game"></div>
-
-    <div id="lobby" class="overlay">
-      <h1>TRASTERO WARS</h1>
-      <p class="sub">Subastas de trasteros · 2–5 jugadores</p>
-      <label>Apodo <input id="nickname" maxlength="16" value="" placeholder="Tu apodo" /></label>
-      <label>Código de sala <input id="roomCode" maxlength="6" value="ABCD" /></label>
-      <button id="joinBtn">Entrar</button>
-      <p id="lobbyMsg" class="msg"></p>
-    </div>
-
-    <div id="hud" class="hidden">
-      <div id="players"></div>
-      <div id="status"></div>
-      <div id="error" role="alert"></div>
-      <div id="net" class="hidden" role="status" aria-live="polite"></div>
-      <div id="actions"></div>
-      <button id="muteBtn" type="button" aria-pressed="false">SONIDO ON</button>
-    </div>
-
-    <div id="a11y" class="sr-only" role="status" aria-live="polite"></div>
-
+    <div id="game" aria-hidden="true"></div>
+    <div id="ui"></div>
+    <noscript>Este juego necesita JavaScript para abrir los trasteros.</noscript>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
