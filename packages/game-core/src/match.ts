@@ -108,47 +108,39 @@ export function placeBid(state: MatchState, playerId: string, amount: number, no
   if (!player) return fail("NOT_CONNECTED");
   if (!player.connected) return fail("NOT_CONNECTED");
   if (a.highBidderId === playerId) return fail("NOT_YOUR_TURN");
-  if (amount < a.minNextBid && !(a.highBidderId === null && amount >= CONFIG.auction.minBid)) {
-    // allow opening at minBid
-    if (!(a.highBidderId === null && amount === CONFIG.auction.minBid)) {
-      return fail("BID_TOO_LOW");
-    }
-  }
   if (amount < CONFIG.auction.minBid) return fail("BID_TOO_LOW");
   if (a.highBidderId !== null && amount < a.currentBid + CONFIG.auction.minIncrement) return fail("BID_TOO_LOW");
   if (player.money < amount) return fail("INSUFFICIENT_FUNDS");
 
-  // extension check
+  // Each bid restarts the 12 s timer. A bid inside the anti-snipe window only
+  // restarts it while extensions remain; once the 3 are spent the lot closes
+  // at the current timer (D-A07), so a last-second bid cannot loop forever.
+  const nowTs = now();
+  const remaining = a.endsAt - nowTs;
+  if (remaining <= 0) return fail("PHASE_INVALID");
+
   let extensionsUsed = a.extensionsUsed;
-  const remaining = a.endsAt - now();
-  const antiSnipeWindow = 3000;
-  let newEndsAt = a.endsAt;
-  if (remaining < antiSnipeWindow && extensionsUsed < CONFIG.auction.maxExtensions) {
-    extensionsUsed += 1;
-    newEndsAt = now() + CONFIG.auction.bidTimerSec * 1000;
-  } else if (remaining < antiSnipeWindow && extensionsUsed >= CONFIG.auction.maxExtensions) {
-    // no extension, keep endsAt (may be soon) -> if already expired handle by tick
+  let endsAt = a.endsAt;
+  if (remaining < CONFIG.auction.antiSnipeSec * 1000) {
+    if (extensionsUsed < CONFIG.auction.maxExtensions) {
+      extensionsUsed += 1;
+      endsAt = nowTs + CONFIG.auction.bidTimerSec * 1000;
+    }
+  } else {
+    endsAt = nowTs + CONFIG.auction.bidTimerSec * 1000;
   }
 
-  const newMinNext = amount + CONFIG.auction.minIncrement;
   const newRound: RoundState = {
     ...r,
     auction: {
       ...a,
       currentBid: amount,
       highBidderId: playerId,
-      endsAt: newEndsAt === a.endsAt ? a.endsAt : newEndsAt,
+      endsAt,
       extensionsUsed,
-      minNextBid: newMinNext,
+      minNextBid: amount + CONFIG.auction.minIncrement,
     },
   };
-  // if no extension and remaining>=window, keep original endsAt; but a new bid should reset timer per spec: "se reinicia con cada puja"
-  newRound.auction!.endsAt = now() + CONFIG.auction.bidTimerSec * 1000;
-  if (remaining < antiSnipeWindow && extensionsUsed > a.extensionsUsed) {
-    // extension already set endsAt above; keep
-  } else {
-    newRound.auction!.endsAt = now() + CONFIG.auction.bidTimerSec * 1000;
-  }
 
   const state2: MatchState = {
     ...state,
@@ -246,12 +238,10 @@ export function afterReveal(state: MatchState, rng: Rng, now: Now): MatchState {
   const round = state.round;
   if (round === 5 || round === 10 || round === 15) {
     // start roulette phase
-    const hashSeed = `hash_${Math.floor(rng() * 1e9)}`;
     const seed = `seed_${Math.floor(rng() * 1e9)}`;
     const roulette: RoulettePhase = {
       round,
-      hashSeed,
-      seed, // server keeps; published as hash only to client (but here we store seed). For commit-reveal, client gets hashSeed now; seed revealed on spin.
+      seed, // server keeps it; the room publishes only sha256(seed) until the spin
       windowEndsAt: now() + CONFIG.roulette.windowSec * 1000,
       bets: [],
       spun: false,
@@ -288,14 +278,27 @@ function rouletteColor(n: number): "red" | "black" | "green" {
   return reds.has(n) ? "red" : "black";
 }
 
-export function spinRoulette(state: MatchState, rng: Rng, now: Now = () => Date.now()): MatchState {
+/**
+ * Spin result derived only from the committed seed (FNV-1a, 32 bits).
+ * The room publishes sha256(seed) before the bets: anyone who gets the seed
+ * at the spin can check both the commitment and the result.
+ */
+export function rouletteResultFromSeed(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) % 37;
+}
+
+export function spinRoulette(state: MatchState, rng: Rng, now: Now): MatchState {
   if (state.phase !== "ROULETTE" || !state.roulette) return state;
   const rp = state.roulette;
   if (rp.spun) return state;
-  // reveal seed (already stored)
+  // reveal seed (already stored; the room published its hash at phase start)
   const seed = rp.seed ?? `seed_${Math.floor(rng() * 1e9)}`;
-  // deterministic result from rng? Use rng to pick 0-36
-  const result = Math.floor(rng() * 37);
+  const result = rouletteResultFromSeed(seed);
   const payouts: RoulettePhase["payouts"] = [];
   const players = state.players.map(p => ({ ...p }));
   for (const bet of rp.bets) {
@@ -319,7 +322,7 @@ export function spinRoulette(state: MatchState, rng: Rng, now: Now = () => Date.
     result,
     payouts,
   };
-  const newState: MatchState = { ...state, roulette: newRp };
+  const newState: MatchState = { ...state, players, roulette: newRp };
   // after spin, advance
   return advanceAfterRoulette(newState, rng, now);
 }

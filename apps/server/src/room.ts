@@ -73,6 +73,7 @@ export class Room {
     conn.room = this;
     this.conns.set(playerId, conn);
 
+    const readyById = new Map(this.state.players.map(p => [p.id, p.ready]));
     this.state = startMatch(
       [...this.conns.values()].map(c => ({ id: c.playerId, nickname: c.nickname })),
       this.code,
@@ -80,7 +81,11 @@ export class Room {
       () => Date.now(),
     );
     this.state.totalRounds = this.totalRounds;
-    // preserve readiness of players that already toggled
+    // keep the ready flag of players that already toggled before this join
+    this.state = {
+      ...this.state,
+      players: this.state.players.map(p => ({ ...p, ready: readyById.get(p.id) ?? false })),
+    };
     this.broadcastRoomState();
     return playerId;
   }
@@ -215,7 +220,12 @@ export class Room {
       } else if (before === "ROULETTE" && this.state.phase !== "ROULETTE") {
         // spinRoulette already advanced the match (next round or GAME_OVER)
         this.broadcastRouletteResult();
-        this.phaseDeadline = now + REVEAL_MS;
+        if (this.state.phase === "GAME_OVER") {
+          this.phaseDeadline = 0;
+        } else {
+          // the new lot must be announced, or the client keeps showing the wheel
+          this.beginIntro();
+        }
       }
       this.announceGameOverIfNeeded();
     } else if (this.state.phase === "REVEAL" && this.phaseDeadline && now >= this.phaseDeadline) {

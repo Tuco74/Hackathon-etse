@@ -18,7 +18,10 @@ const game = new Phaser.Game({
   scene: [GameScene],
 });
 
-const scene = () => game.scene.getScene("game") as GameScene;
+function scene(): GameScene | null {
+  const s = game.scene?.getScene("game");
+  return (s as GameScene | null) ?? null;
+}
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -60,6 +63,10 @@ joinBtn.addEventListener("click", async () => {
   try {
     if (!socket.connected) await socket.connect(wsUrl());
     localStorage.setItem("tw.nickname", nick);
+    // every join gets a fresh server-side playerId (reconnection is not
+    // implemented yet), so a stored id from a previous session is stale
+    me = "";
+    localStorage.removeItem("tw.playerId");
     pendingJoin = true;
     socket.send({ type: "C2S_JOIN", nickname: nick, roomCode: room });
     lobbyMsg.textContent = "";
@@ -119,7 +126,7 @@ socket.on((msg) => {
       if (pendingJoin && fresh) {
         me = fresh.id;
         pendingJoin = false;
-        scene().setPlayerId(me);
+        scene()?.setPlayerId(me);
       }
     }
   }
@@ -137,14 +144,16 @@ window.addEventListener("tw:room", (ev) => {
   if (a11y) {
     a11y.textContent = `Sala ${detail.roomCode}. Ronda ${detail.round} de ${detail.totalRounds}. Fase ${detail.phase}. Jugadores: ${detail.players.map((p) => `${p.nickname} con ${p.money} euros`).join(", ")}.`;
   }
-  playersEl.innerHTML = detail.players
-    .map((p) => {
+  playersEl.replaceChildren(
+    ...detail.players.map((p) => {
       const isMe = p.id === me;
-      return `<div class="player ${isMe ? "me" : ""}">
-        ${p.nickname} · ${p.money}€ ${p.ready ? "✔" : ""}${isMe ? " (tú)" : ""}
-      </div>`;
-    })
-    .join("");
+      const el = document.createElement("div");
+      el.className = isMe ? "player me" : "player";
+      // textContent, not innerHTML: nicknames are user input
+      el.textContent = `${p.nickname} · ${p.money}€ ${p.ready ? "✔" : ""}${isMe ? " (tú)" : ""}`;
+      return el;
+    }),
+  );
 
   if (detail.phase === "LOBBY") {
     actionsEl.dataset.mode = "lobby";

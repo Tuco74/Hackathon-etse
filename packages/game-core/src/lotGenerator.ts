@@ -91,15 +91,29 @@ export function generateLot(round: number, rng: Rng): { public: LotPublic; secre
     objects.push({ silhouetteId: sil, name, trueValue: val, category });
   }
 
-  // trap: ensure values differ ~10x. Adjust one of pair.
+  // Trap pair: same silhouette, one object worth 10x the other. Rebalance the
+  // remaining objects so `trueTotal` stays inside the round band: the x10 must
+  // not push the lot past `range.max` (the band is a contract, see BALANCE.md).
   if (trapPair) {
-    const a = objects[trapIndexA]!.trueValue;
-    const b = objects[trapIndexB]!.trueValue;
-    const small = Math.min(a, b);
-    const large = small * 10;
-    if (a >= b) objects[trapIndexA]!.trueValue = large;
-    else objects[trapIndexB]!.trueValue = large;
-    // recompute total? keep; total is target but trap may exceed; clamp not needed
+    const smallIdx = objects[trapIndexA]!.trueValue <= objects[trapIndexB]!.trueValue ? trapIndexA : trapIndexB;
+    const bigIdx = smallIdx === trapIndexA ? trapIndexB : trapIndexA;
+    const others = objects.filter((_, i) => i !== smallIdx && i !== bigIdx);
+    // 11x the small value plus at least 1 per remaining object must fit
+    const maxSmall = Math.floor((total - others.length) / 11);
+    const small = Math.max(1, Math.min(objects[smallIdx]!.trueValue, maxSmall));
+    objects[smallIdx]!.trueValue = small;
+    objects[bigIdx]!.trueValue = small * 10;
+
+    const remaining = total - small * 11;
+    const othersValue = others.reduce((sum, o) => sum + o.trueValue, 0);
+    let assigned = 0;
+    others.forEach((o, i) => {
+      const share = i === others.length - 1
+        ? remaining - assigned
+        : Math.floor((othersValue > 0 ? o.trueValue / othersValue : 1 / others.length) * remaining);
+      o.trueValue = Math.max(0, share);
+      assigned += o.trueValue;
+    });
   }
 
   const trueTotal = objects.reduce((s: number, o: { trueValue: number }) => s + o.trueValue, 0);

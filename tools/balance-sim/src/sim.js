@@ -5,7 +5,7 @@ function rngFactory(seed) {
   let x = seed >>> 0;
   return () => {
     x = (x * 1664525 + 1013904223) >>> 0;
-    return x / 0xffffffff;
+    return x / 0x100000000;
   };
 }
 

@@ -15,6 +15,7 @@ export const CONFIG = {
     minIncrement: 25,
     bidTimerSec: 12,
     maxExtensions: 3,
+    antiSnipeSec: 3,
     openingBid: 0,
   },
   lot: {
