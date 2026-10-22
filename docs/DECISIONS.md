@@ -252,3 +252,29 @@ No se altera la escena ni la lógica de juego.
 
 **Consecuencias:** C debe revisar estos dos ficheros antes de continuar su workstream;
 cualquier rediseño del transporte tiene que conservar `S2C_JOINED` y el token.
+### D-D01 — La interfaz es DOM, no Phaser
+
+Todo el texto y los controles viven en `apps/client/src/ui` (DOM), sobre el canvas
+de Phaser. Motivo: foco, teclado, lectores de pantalla, `dialog` nativo y textos que
+no se emborronan al escalar. El canvas queda como escenario. `GameScene` ya no
+pinta textos ni botones: eran placeholders que duplicaban el HUD.
+
+### D-D02 — Iconos desde el atlas de E, sin copiar `assets/`
+
+`ui/icons.ts` importa `assets/atlases/ui.png` con `?url` (Vite lo empaqueta con
+hash) y lee las coordenadas de los frames de `ui.json`. Copiar `assets/` como
+`publicDir` habría metido `catalog.json` (valores privados) en el bundle.
+
+### D-D03 — Anuncio del lote después de la ruleta
+
+`advanceAfterRoulette` ya había hecho `startRound`, pero la sala no enviaba
+`S2C_ROUND_INTRO`: la ronda siguiente se pujaba a ciegas. La sala ahora anuncia el
+lote 4 s después del resultado (`RESULT_PAUSE_MS`), con el temporizador de la
+subasta ya corriendo, igual que en `D-A10`.
+
+### D-D04 — Categoría del revelado
+
+El generador asigna una categoría por lote; el payload público de revelado no
+incluye categoría por objeto. La UI usa `lot.category` para las etiquetas y mapea
+las categorías del servidor (`jewelry`, `art`, `antique`, `misc`) a los 8 iconos
+de E.

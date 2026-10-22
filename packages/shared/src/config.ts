@@ -47,6 +47,8 @@ export const CONFIG = {
     tickMs: 200,
     introMs: 3000,
     revealMs: 6000,
+    // pause after the roulette result before announcing the next lot
+    resultPauseMs: 4000,
     heartbeatMs: 15000,
     maxPayloadBytes: 16 * 1024,
     // ids kept per connection to make retransmissions idempotent

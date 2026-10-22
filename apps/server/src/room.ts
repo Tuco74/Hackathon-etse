@@ -76,6 +76,7 @@ export class Room {
   private log: Logger;
   private timer: NodeJS.Timeout | null = null;
   private phaseDeadline = 0;
+  private introDeadline = 0;
   private gameOverAnnounced = false;
   private lastPhase: GamePhase;
   private readonly totalRounds: number;
@@ -369,6 +370,12 @@ export class Room {
     const now = this.now();
     if (this.expireSeats(now)) this.broadcastRoomState();
 
+    // Give the roulette result a beat on screen before the next lot (D-D03).
+    if (this.introDeadline > 0 && now >= this.introDeadline) {
+      this.introDeadline = 0;
+      if (this.state.phase === "AUCTION") this.beginIntro();
+    }
+
     if (this.state.phase === "GAME_OVER") {
       this.logPhaseChange();
       return;
@@ -389,7 +396,10 @@ export class Room {
         });
       } else if (before === "ROULETTE" && this.state.phase !== "ROULETTE") {
         this.broadcastRouletteResult();
-        if (this.state.phase === "AUCTION") this.beginIntro();
+        if (this.state.phase === "AUCTION") {
+          // the new round is already running server-side; announce it after a pause
+          this.introDeadline = now + CONFIG.server.resultPauseMs;
+        }
         this.phaseDeadline = 0;
       }
     } else if (this.state.phase === "REVEAL" && this.phaseDeadline > 0 && now >= this.phaseDeadline) {
