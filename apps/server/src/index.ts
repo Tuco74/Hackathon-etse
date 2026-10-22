@@ -1,13 +1,20 @@
+import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer, type WebSocket } from "ws";
-import { parseC2S, CONFIG } from "@trastero/shared";
-import { Room } from "./room.js";
+import { CONFIG, type ErrorCode, type S2CMessage } from "@trastero/shared";
+import { createClock } from "./clock.js";
+import { createLogger } from "./log.js";
+import { Room, type Conn } from "./room.js";
+import { Dedupe, parseWire, RateLimiter } from "./wire.js";
 
-const PORT = Number(process.env.PORT ?? 2567);
-const TOTAL_ROUNDS = Number(process.env.GAME_ROUNDS ?? CONFIG.match.rounds);
+const clock = createClock();
+const log = createLogger("server");
+
+const PORT = toPositiveInt(process.env.PORT, 2567);
+const TOTAL_ROUNDS = toPositiveInt(process.env.GAME_ROUNDS, CONFIG.match.rounds);
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const CLIENT_DIST = resolve(__dirname, "../../client/dist");
 
@@ -20,23 +27,42 @@ const MIME: Record<string, string> = {
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
   ".woff2": "font/woff2",
+  ".wav": "audio/wav",
 };
 
 const rooms = new Map<string, Room>();
+
+/** Only positive integers from env; anything else falls back. */
+function toPositiveInt(raw: string | undefined, fallback: number): number {
+  if (raw === undefined) return fallback;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+}
 
 function getRoom(code: string): Room {
   const key = code.toUpperCase();
   let room = rooms.get(key);
   if (!room) {
-    room = new Room(key, TOTAL_ROUNDS);
+    room = new Room(key, { totalRounds: TOTAL_ROUNDS });
     room.startLoop();
     rooms.set(key, room);
+    log.info("room_created", { room: key, rounds: TOTAL_ROUNDS });
   }
   return room;
 }
 
+function sweepRooms(): void {
+  for (const [code, room] of rooms) {
+    if (!room.canDispose()) continue;
+    room.stopLoop();
+    rooms.delete(code);
+    log.info("room_disposed", { room: code });
+  }
+}
+
 const server = createServer(async (req, res) => {
-  const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+
   if (url.pathname === "/healthz") {
     // Operational snapshot: phase/round/players only, never lot values.
     res.writeHead(200, { "content-type": "application/json" });
@@ -44,22 +70,27 @@ const server = createServer(async (req, res) => {
       JSON.stringify({
         ok: true,
         rooms: rooms.size,
-        detail: [...rooms.values()].map((r) => ({
-          code: r.code,
-          phase: r.phase,
-          players: r.playerCount,
-          state: r.describe(),
-        })),
+        players: [...rooms.values()].reduce((n, r) => n + r.playerCount, 0),
+        detail: [...rooms.values()].map((r) => ({ code: r.code, ...r.describe() })),
       }),
     );
     return;
   }
 
-  const safePath = normalize(url.pathname).replace(/^(\.\.[/\\])+/, "");
-  let filePath = join(CLIENT_DIST, safePath);
   try {
+    const decoded = decodeURIComponent(url.pathname);
+    const requested = resolve(CLIENT_DIST, `.${decoded}`);
+    // never serve outside the client bundle
+    if (requested !== CLIENT_DIST && !requested.startsWith(CLIENT_DIST + sep)) {
+      res.writeHead(403, { "content-type": "text/plain; charset=utf-8" });
+      res.end("Forbidden");
+      return;
+    }
+
+    let filePath = requested;
     const info = await stat(filePath).catch(() => null);
-    if (!info || info.isDirectory()) filePath = join(CLIENT_DIST, "index.html");
+    if (!info || info.isDirectory()) filePath = resolve(CLIENT_DIST, "index.html");
+
     const body = await readFile(filePath);
     res.writeHead(200, { "content-type": MIME[extname(filePath)] ?? "application/octet-stream" });
     res.end(body);
@@ -69,70 +100,188 @@ const server = createServer(async (req, res) => {
   }
 });
 
-const wss = new WebSocketServer({ server, path: "/ws" });
+const wss = new WebSocketServer({
+  server,
+  path: "/ws",
+  maxPayload: CONFIG.server.maxPayloadBytes,
+});
 
-interface ClientCtx {
-  id: string;
-  playerId: string;
-  nickname: string;
+interface ClientCtx extends Omit<Conn, "ws"> {
   ws: WebSocket;
-  room: Room | null;
+  dedupe: Dedupe;
+  limiter: RateLimiter;
+  alive: boolean;
+}
+
+const clients = new Set<ClientCtx>();
+
+function sendRaw(ws: WebSocket, msg: S2CMessage): void {
+  if (ws.readyState !== 1) return;
+  ws.send(JSON.stringify({ v: 1, type: msg.type, id: randomUUID(), ts: clock.now(), payload: msg }));
+}
+
+function sendError(ws: WebSocket, code: ErrorCode, message: string, refId?: string): void {
+  const payload: S2CMessage = refId
+    ? { type: "S2C_ERROR", code, message, refId }
+    : { type: "S2C_ERROR", code, message };
+  sendRaw(ws, payload);
 }
 
 wss.on("connection", (ws) => {
-  const conn: ClientCtx = { id: crypto.randomUUID(), playerId: "", nickname: "", ws, room: null };
+  const ctx: ClientCtx = {
+    id: randomUUID(),
+    playerId: "",
+    nickname: "",
+    ws,
+    room: null,
+    dedupe: new Dedupe(),
+    limiter: new RateLimiter(undefined, undefined, clock.now),
+    alive: true,
+  };
+  clients.add(ctx);
+
+  ws.on("pong", () => {
+    ctx.alive = true;
+  });
+
+  ws.on("error", (err) => {
+    log.warn("ws_error", { message: err.message });
+  });
 
   ws.on("message", (data) => {
-    let raw: unknown;
-    try {
-      raw = JSON.parse(String(data));
-    } catch {
-      ws.send(JSON.stringify({ v: 1, type: "S2C_ERROR", id: crypto.randomUUID(), ts: Date.now(), payload: { type: "S2C_ERROR", code: "INVALID_PAYLOAD", message: "JSON inválido" } }));
+    const text = String(data);
+
+    if (!ctx.limiter.allow()) {
+      sendError(ws, "RATE_LIMITED", "Demasiados mensajes por segundo");
       return;
     }
 
-    const envelope = raw as { payload?: unknown } | null;
-    const message = parseC2S(envelope?.payload ?? raw);
-    if (!message) {
-      ws.send(JSON.stringify({ v: 1, type: "S2C_ERROR", id: crypto.randomUUID(), ts: Date.now(), payload: { type: "S2C_ERROR", code: "INVALID_PAYLOAD", message: "Mensaje no válido" } }));
+    const parsed = parseWire(text);
+    if (!parsed.ok) {
+      sendError(ws, parsed.code, parsed.detail, parsed.id);
       return;
     }
 
-    if (message.type === "C2S_JOIN") {
-      if (conn.room) {
-        conn.room.leave(conn.playerId);
+    // Retransmissions (same envelope id) are idempotent: drop the duplicate.
+    if (!ctx.dedupe.accept(parsed.id)) return;
+    const msg = parsed.message;
+
+    if (msg.type === "C2S_JOIN") {
+      if (ctx.room) {
+        const previous = ctx.room;
+        previous.leave(ctx);
+        if (previous.canDispose()) sweepRooms();
       }
-      const room = getRoom(message.roomCode);
-      const result = room.join(conn as never, message.nickname);
-      if (typeof result !== "string") {
-        ws.send(JSON.stringify({ v: 1, type: "S2C_ERROR", id: crypto.randomUUID(), ts: Date.now(), payload: { type: "S2C_ERROR", code: result.error, message: "No se pudo unir a la sala" } }));
+      const room = getRoom(msg.roomCode);
+      const result = room.join(ctx, msg.nickname);
+      if (!result.ok) {
+        sendError(ws, result.error, result.message, parsed.id);
         return;
       }
-      conn.playerId = result;
-      room.broadcastRoomState();
+      log.info("player_joined", {
+        room: room.code,
+        playerId: result.playerId,
+        nickname: msg.nickname,
+      });
       return;
     }
 
-    if (!conn.room) {
-      ws.send(JSON.stringify({ v: 1, type: "S2C_ERROR", id: crypto.randomUUID(), ts: Date.now(), payload: { type: "S2C_ERROR", code: "ROOM_NOT_FOUND", message: "Únete a una sala primero" } }));
+    if (msg.type === "C2S_RECONNECT") {
+      if (ctx.room) {
+        sendError(ws, "ALREADY_JOINED", "Ya estás en una sala", parsed.id);
+        return;
+      }
+      const room = rooms.get(msg.roomCode.toUpperCase());
+      if (!room) {
+        sendError(ws, "RECONNECT_FAILED", "La sala ya no existe", parsed.id);
+        return;
+      }
+      const result = room.reconnect(ctx, msg.playerId, msg.token);
+      if (!result.ok) {
+        sendError(ws, result.error, result.message, parsed.id);
+        return;
+      }
+      log.info("player_reconnected", {
+        room: room.code,
+        playerId: msg.playerId,
+        phase: room.phase,
+      });
       return;
     }
 
-    conn.room.handle(conn as never, message);
+    if (msg.type === "C2S_PING" && !ctx.room) {
+      sendRaw(ws, { type: "S2C_PONG", clientTs: msg.clientTs, serverTs: clock.now() });
+      return;
+    }
+
+    if (!ctx.room) {
+      sendError(ws, "ROOM_NOT_FOUND", "Únete a una sala primero", parsed.id);
+      return;
+    }
+
+    ctx.room.handle(ctx, msg, parsed.id);
   });
 
   ws.on("close", () => {
-    if (conn.room) {
-      const room = conn.room;
-      room.leave(conn.playerId);
-      if (room.isEmpty) {
-        room.stopLoop();
-        rooms.delete(room.code);
-      }
+    clients.delete(ctx);
+    const room = ctx.room;
+    if (room) {
+      room.leave(ctx);
+      if (room.canDispose()) sweepRooms();
     }
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Trastero Wars server en http://localhost:${PORT} (ws: /ws, rondas: ${TOTAL_ROUNDS})`);
+// Detect silent drops (closed laptop, lost wifi) so the 45 s seat reserve starts.
+const heartbeat = setInterval(() => {
+  for (const ctx of clients) {
+    if (!ctx.alive) {
+      log.info("heartbeat_timeout", { playerId: ctx.playerId });
+      ctx.ws.terminate();
+      continue;
+    }
+    ctx.alive = false;
+    try {
+      ctx.ws.ping();
+    } catch {
+      /* socket already gone */
+    }
+  }
+}, CONFIG.server.heartbeatMs);
+heartbeat.unref();
+
+const sweeper = setInterval(sweepRooms, 5000);
+sweeper.unref();
+
+server.on("error", (err) => {
+  log.error("http_error", { message: err.message });
+  process.exitCode = 1;
+  shutdown("http_error");
 });
+wss.on("error", (err) => log.error("wss_error", { message: err.message }));
+
+server.listen(PORT, () => {
+  log.info("listening", { port: PORT, rounds: TOTAL_ROUNDS, ws: "/ws" });
+});
+
+let shuttingDown = false;
+function shutdown(reason: string): void {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  log.info("shutdown", { reason });
+  clearInterval(heartbeat);
+  clearInterval(sweeper);
+  for (const room of rooms.values()) room.stopLoop();
+  for (const ctx of clients) {
+    try {
+      ctx.ws.close(1001, "server shutdown");
+    } catch {
+      /* ignore */
+    }
+  }
+  server.close(() => process.exit(process.exitCode ?? 0));
+  setTimeout(() => process.exit(process.exitCode ?? 0), 3000).unref();
+}
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
