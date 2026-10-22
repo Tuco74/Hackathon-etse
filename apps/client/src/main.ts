@@ -172,6 +172,7 @@ function clearRouletteActions(): void {
   if (actionsEl.dataset.mode !== "roulette") return;
   actionsEl.replaceChildren();
   delete actionsEl.dataset.mode;
+  hud.classList.remove("roulette-open");
 }
 
 function betChips(cash: number): Array<{ label: string; amount: number }> {
@@ -207,6 +208,7 @@ function buildRouletteActions(): void {
   }
 
   actionsEl.dataset.mode = "roulette";
+  hud.classList.add("roulette-open");
   actionsEl.replaceChildren();
 
   const info = document.createElement("span");
@@ -464,6 +466,7 @@ socket.on((msg) => {
     actionsEl.replaceChildren();
     const again = document.createElement("button");
     again.textContent = "Ver sala";
+    again.className = "reload";
     again.onclick = () => window.location.reload();
     actionsEl.append(again);
 

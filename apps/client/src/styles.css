@@ -82,7 +82,19 @@ canvas {
   justify-content: space-between;
 }
 
-#players { display: flex; gap: 10px; flex-wrap: wrap; }
+#toprow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+#chrome {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+#players { display: flex; gap: 10px; flex-wrap: wrap; flex: 1 1 auto; }
 
 .player {
   background: rgba(34, 29, 46, 0.85);
@@ -104,6 +116,15 @@ canvas {
   color: #cfc9d9;
   text-shadow: 2px 2px 0 #000;
 }
+#hud.roulette-open #status { display: none; }
+
+#actions .reload {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 6;
+}
+
 #error { align-self: center; min-height: 18px; color: #ff8b86; font-size: 13px; text-align: center; }
 #actions { display: flex; gap: 10px; justify-content: center; pointer-events: auto; flex-wrap: wrap; }
 .roulette-info {
@@ -145,9 +166,6 @@ canvas {
 #net[data-state="closed"] { border-color: var(--danger); color: #ff8b86; }
 
 #muteBtn {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
   font-family: inherit;
   font-size: 11px;
   letter-spacing: 1px;
@@ -202,9 +220,6 @@ canvas {
 /* ---------- botón de ayuda ---------- */
 
 #helpBtn {
-  position: absolute;
-  right: 14px;
-  bottom: 48px;
   font-family: inherit;
   font-size: 11px;
   letter-spacing: 1px;
