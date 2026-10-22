@@ -14,6 +14,23 @@ function makePlayer(id: string, nickname: string): Player {
   };
 }
 
+export function seededSeed(rng: Rng): string {
+  // 32-bit seed as 8 hex chars; the server commits sha256(seed) before the spin.
+  const hi = Math.floor(rng() * 0x10000) & 0xffff;
+  const lo = Math.floor(rng() * 0x10000) & 0xffff;
+  return ((hi << 16) | lo).toString(16).padStart(8, "0");
+}
+
+/** Deterministic, verifiable spin result in [0, 36]. FNV-1a over the seed. */
+export function rouletteResultFromSeed(seed: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h % 37;
+}
+
 export function startMatch(
   players: { id: string; nickname: string }[],
   roomCode: string,
@@ -121,7 +138,7 @@ export function placeBid(state: MatchState, playerId: string, amount: number, no
   // extension check
   let extensionsUsed = a.extensionsUsed;
   const remaining = a.endsAt - now();
-  const antiSnipeWindow = 3000;
+  const antiSnipeWindow = CONFIG.auction.antiSnipeWindowMs;
   let newEndsAt = a.endsAt;
   if (remaining < antiSnipeWindow && extensionsUsed < CONFIG.auction.maxExtensions) {
     extensionsUsed += 1;
@@ -245,13 +262,11 @@ export function afterReveal(state: MatchState, rng: Rng, now: Now): MatchState {
   // decide roulette or next round
   const round = state.round;
   if (round === 5 || round === 10 || round === 15) {
-    // start roulette phase
-    const hashSeed = `hash_${Math.floor(rng() * 1e9)}`;
-    const seed = `seed_${Math.floor(rng() * 1e9)}`;
+    // Commit-reveal: the seed stays server-side; the server publishes sha256(seed).
+    const seed = seededSeed(rng);
     const roulette: RoulettePhase = {
       round,
-      hashSeed,
-      seed, // server keeps; published as hash only to client (but here we store seed). For commit-reveal, client gets hashSeed now; seed revealed on spin.
+      seed,
       windowEndsAt: now() + CONFIG.roulette.windowSec * 1000,
       bets: [],
       spun: false,
@@ -288,14 +303,14 @@ function rouletteColor(n: number): "red" | "black" | "green" {
   return reds.has(n) ? "red" : "black";
 }
 
-export function spinRoulette(state: MatchState, rng: Rng, now: Now = () => Date.now()): MatchState {
+export function spinRoulette(state: MatchState, _rng: Rng, now: Now = () => Date.now()): MatchState {
   if (state.phase !== "ROULETTE" || !state.roulette) return state;
   const rp = state.roulette;
   if (rp.spun) return state;
-  // reveal seed (already stored)
-  const seed = rp.seed ?? `seed_${Math.floor(rng() * 1e9)}`;
-  // deterministic result from rng? Use rng to pick 0-36
-  const result = Math.floor(rng() * 37);
+  // The seed was committed at phase start: result must be derived from it,
+  // never from a fresh draw, or the commitment proves nothing.
+  const seed = rp.seed ?? seededSeed(_rng);
+  const result = rouletteResultFromSeed(seed);
   const payouts: RoulettePhase["payouts"] = [];
   const players = state.players.map(p => ({ ...p }));
   for (const bet of rp.bets) {
@@ -321,7 +336,7 @@ export function spinRoulette(state: MatchState, rng: Rng, now: Now = () => Date.
   };
   const newState: MatchState = { ...state, roulette: newRp };
   // after spin, advance
-  return advanceAfterRoulette(newState, rng, now);
+  return advanceAfterRoulette(newState, _rng, now);
 }
 
 function advanceAfterRoulette(state: MatchState, rng: Rng, now: Now): MatchState {

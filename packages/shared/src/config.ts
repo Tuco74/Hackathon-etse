@@ -16,6 +16,8 @@ export const CONFIG = {
     bidTimerSec: 12,
     maxExtensions: 3,
     openingBid: 0,
+    // a bid inside this window consumes one anti-snipe extension
+    antiSnipeWindowMs: 3000,
   },
   lot: {
     minObjects: 2,
@@ -39,6 +41,20 @@ export const CONFIG = {
   },
   reconnect: {
     seatReserveSec: 45,
+  },
+  // Server orchestration knobs. Owned by workstream B; never used by game rules.
+  server: {
+    tickMs: 200,
+    introMs: 3000,
+    revealMs: 6000,
+    heartbeatMs: 15000,
+    maxPayloadBytes: 16 * 1024,
+    // ids kept per connection to make retransmissions idempotent
+    dedupeWindow: 256,
+    rateLimit: {
+      capacity: 30,
+      refillPerSec: 15,
+    },
   },
   client: {
     internalWidth: 480,

@@ -89,11 +89,23 @@ export const ErrorCode = z.enum([
   "NOT_CONNECTED",
   "ROOM_NOT_FOUND",
   "NOT_ALL_READY",
+  "RATE_LIMITED",
+  "RECONNECT_FAILED",
+  "SEAT_EXPIRED",
+  "NAME_TAKEN",
+  "ALREADY_JOINED",
+  "GAME_ALREADY_STARTED",
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 
 // ---------- C2S messages ----------
 export const C2S_JOIN = z.object({ type: z.literal("C2S_JOIN"), nickname: z.string().min(1).max(16), roomCode: z.string().min(4).max(6) });
+export const C2S_RECONNECT = z.object({
+  type: z.literal("C2S_RECONNECT"),
+  roomCode: z.string().min(4).max(6),
+  playerId: z.string().uuid(),
+  token: z.string().min(16).max(128),
+});
 export const C2S_SET_READY = z.object({ type: z.literal("C2S_SET_READY"), ready: z.boolean() });
 export const C2S_START_GAME = z.object({ type: z.literal("C2S_START_GAME") });
 export const C2S_BID = z.object({ type: z.literal("C2S_BID"), amount: z.number().int().positive() });
@@ -102,11 +114,25 @@ export const C2S_EMOTE = z.object({ type: z.literal("C2S_EMOTE"), emoteId: z.num
 export const C2S_PING = z.object({ type: z.literal("C2S_PING"), clientTs: z.number().int() });
 
 export const C2SMessage = z.discriminatedUnion("type", [
-  C2S_JOIN, C2S_SET_READY, C2S_START_GAME, C2S_BID, C2S_ROULETTE_BET, C2S_EMOTE, C2S_PING,
+  C2S_JOIN, C2S_RECONNECT, C2S_SET_READY, C2S_START_GAME, C2S_BID, C2S_ROULETTE_BET, C2S_EMOTE, C2S_PING,
 ]);
 export type C2SMessage = z.infer<typeof C2SMessage>;
 
+export const C2S_TYPES: ReadonlySet<string> = new Set([
+  "C2S_JOIN", "C2S_RECONNECT", "C2S_SET_READY", "C2S_START_GAME",
+  "C2S_BID", "C2S_ROULETTE_BET", "C2S_EMOTE", "C2S_PING",
+]);
+
 // ---------- S2C messages ----------
+// Private handshake: only the receiving socket gets its playerId and token.
+// Never broadcast this payload.
+export const S2C_JOINED = z.object({
+  type: z.literal("S2C_JOINED"),
+  roomCode: z.string(),
+  playerId: z.string(),
+  token: z.string(),
+  reconnected: z.boolean(),
+});
 export const S2C_ROOM_STATE = z.object({
   type: z.literal("S2C_ROOM_STATE"),
   roomCode: z.string(),
@@ -171,11 +197,16 @@ export const S2C_ERROR = z.object({
   refId: z.string().optional(),
 });
 export const S2C_PONG = z.object({ type: z.literal("S2C_PONG"), clientTs: z.number().int(), serverTs: z.number().int() });
+export const S2C_EMOTE = z.object({
+  type: z.literal("S2C_EMOTE"),
+  playerId: z.string(),
+  emoteId: z.number().int().min(0).max(5),
+});
 
 export const S2CMessage = z.discriminatedUnion("type", [
-  S2C_ROOM_STATE, S2C_ROUND_INTRO, S2C_AUCTION_STATE, S2C_BID_EVENT,
+  S2C_JOINED, S2C_ROOM_STATE, S2C_ROUND_INTRO, S2C_AUCTION_STATE, S2C_BID_EVENT,
   S2C_REVEAL, S2C_ROULETTE_PHASE, S2C_ROULETTE_RESULT, S2C_GAME_OVER,
-  S2C_ERROR, S2C_PONG,
+  S2C_ERROR, S2C_PONG, S2C_EMOTE,
 ]);
 export type S2CMessage = z.infer<typeof S2CMessage>;
 

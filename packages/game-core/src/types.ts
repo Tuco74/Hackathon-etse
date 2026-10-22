@@ -49,8 +49,7 @@ export interface RouletteBet {
 
 export interface RoulettePhase {
   round: number; // after which round (5,10,15)
-  hashSeed: string;
-  seed: string | null; // revealed on spin
+  seed: string | null; // secret until the spin; server publishes sha256(seed) at phase start
   windowEndsAt: number;
   bets: RouletteBet[];
   spun: boolean;
