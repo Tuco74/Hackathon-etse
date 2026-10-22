@@ -158,6 +158,19 @@ describe("lot generator", () => {
     expect(pub.objectCount).toBeGreaterThanOrEqual(2);
     expect(pub.objectCount).toBeLessThanOrEqual(5);
   });
+  it("varies categories, names and silhouettes inside a lot", () => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const { public: pub, secret } = generateLot((seed % 20) + 1, rngSeq([seed / 41]));
+      expect(new Set(secret.objects.map((o) => o.category)).size).toBeGreaterThan(1);
+      expect(new Set(secret.objects.map((o) => o.name)).size).toBe(secret.objects.length);
+      expect(new Set(pub.silhouettes).size).toBeGreaterThanOrEqual(pub.objectCount - 1);
+      expect(pub.silhouettes.every((id) => id.startsWith("sil_"))).toBe(true);
+      if (pub.category !== "mixed") {
+        expect(secret.objects.every((o) => o.category === pub.category)).toBe(true);
+      }
+    }
+  });
+
   it("no trueValue in public", () => {
     const { public: pub } = generateLot(1, rngSeq([0.1]));
     expect((pub as any).trueValue).toBeUndefined();

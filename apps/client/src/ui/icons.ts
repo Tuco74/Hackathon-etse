@@ -105,6 +105,7 @@ const CATEGORY_ICON: Record<string, IconName> = {
   art: "collectibles",
   antique: "furniture",
   misc: "mystery",
+  mixed: "mystery",
 };
 
 export function categoryIcon(category: string, scale = 2): HTMLSpanElement {

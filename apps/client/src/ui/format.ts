@@ -86,6 +86,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   art: "Arte",
   antique: "Antigüedades",
   misc: "Miscelánea",
+  mixed: "Surtido",
 };
 
 export function categoryLabel(category: string): string {

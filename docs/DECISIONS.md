@@ -474,3 +474,14 @@ socket que `session` de C. Sobre esa base se reaplican los fixes de B:
 - Líder: banner fijo `👑 VAS GANANDO` / `VA GANANDO: …` bajo la fila de jugadores.
 - Subasta: puja mínima + 10 €, atajos +25 € y +50 € (los tres botones de cc0ba3f).
 - Textos: 100 % español (`Intro` en vez de `Enter`, `Compromiso`, categorías traducidas).
+
+### D-B12 — Lotes variados: categoría y silueta por objeto
+
+**Contexto:** el generador elegía una sola categoría por lote y podía repetir siluetas; el
+revelado usaba `lot.category` para todos los objetos, así que todos mostraban el mismo
+icono y el mismo tipo.
+
+**Decisión:** `generateLot` baraja categorías y siluetas y asigna una categoría distinta a
+cada objeto (nombre único dentro del lote), con siluetas canónicas `sil_*` sin repetir
+salvo la pareja trampa intencional. `S2C_REVEAL.objects[].category` viaja por objeto y la
+UI pinta icono/etiqueta propios. `LotPublic.category` pasa a `"mixed"` si hay variedad.

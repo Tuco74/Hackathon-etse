@@ -29,7 +29,7 @@ export interface RoundState {
   } | null;
   revealed: boolean;
   revealData: {
-    objects: { silhouetteId: string; name: string; value: number }[];
+    objects: { silhouetteId: string; name: string; value: number; category: string }[];
     total: number;
     winnerId: string | null;
     winningBid: number;

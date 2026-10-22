@@ -7,6 +7,8 @@
   `sessionStorage`, líder fijo y pujas +10/+25/+50.
 - 64 tests, typecheck, build, anti-fuga y pruebas en navegador (mock y 2 pestañas).
 
+- Lotes variados por objeto (categoría, nombre, silueta) y revelado con icono/tipo propios.
+
 ## Pendiente
 - [x] Commit y push de la integración final (`1f1ee89`).
 - [x] CI verde y :2567 sirviendo el cliente nuevo (recargar pestañas).

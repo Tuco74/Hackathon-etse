@@ -83,6 +83,7 @@ Cada ticket indica dueño, ficheros que toca y Definition of Done.
 - [x] **C7** Integración con el netcode de B: `S2C_JOINED` como fuente de identidad,
   `C2S_RECONNECT` con token en `sessionStorage` (una sesión por pestaña), backoff y
   manejo de `SEAT_EXPIRED`/`RECONNECT_FAILED`. Mock sigue usando el heurístico de apodo.
+- [x] **C10** Lotes variados: cada objeto lleva su propia `category`, nombres únicos y silueta distinta (salvo la pareja trampa); el revelado pinta icono+tipo por objeto.
 - [x] **C9** UI: textos 100% español (categorías, `compromiso`, `SONIDO ACTIVADO`), líder fijo `👑` y panel de ruleta con `skipped`.
 - [x] **C8** Panel de ruleta accionable: cantidad + color, `Pasar`, `Girar ahora`
   (deshabilitado con motivo hasta `readyToSpin`), confirmación de apuesta, errores

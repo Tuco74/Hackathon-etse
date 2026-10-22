@@ -256,7 +256,7 @@ export function createMockServer(
     emit({
       type: "S2C_REVEAL",
       lotId: lot?.id ?? "",
-      objects: lotObjects.map((o) => ({ silhouetteId: o.silhouette, name: o.name, value: o.value })),
+      objects: lotObjects.map((o) => ({ silhouetteId: o.silhouette, name: o.name, value: o.value, category: o.category })),
       total,
       winnerId: winner,
       winningBid: bid,

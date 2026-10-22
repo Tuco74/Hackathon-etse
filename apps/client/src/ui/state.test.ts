@@ -123,7 +123,7 @@ describe("round flow", () => {
     const reveal: S2CMessage = {
       type: "S2C_REVEAL",
       lotId: "lot-1",
-      objects: [{ silhouetteId: "sil_tv", name: "Televisor", value: 450 }],
+      objects: [{ silhouetteId: "sil_tv", name: "Televisor", value: 450, category: "electronics" }],
       total: 450,
       winnerId: "p1",
       winningBid: 300,
@@ -203,7 +203,7 @@ describe("errors and results", () => {
       {
         type: "S2C_REVEAL",
         lotId: "lot-1",
-        objects: [{ silhouetteId: "sil_tv", name: "TV", value: 100 }],
+        objects: [{ silhouetteId: "sil_tv", name: "TV", value: 100, category: "electronics" }],
         total: 100,
         winnerId: "p1",
         winningBid: 300,
@@ -217,7 +217,7 @@ describe("errors and results", () => {
       {
         type: "S2C_REVEAL",
         lotId: "lot-2",
-        objects: [{ silhouetteId: "sil_vase", name: "Jarrón", value: 900 }],
+        objects: [{ silhouetteId: "sil_vase", name: "Jarrón", value: 900, category: "antique" }],
         total: 900,
         winnerId: "p1",
         winningBid: 400,

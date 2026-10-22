@@ -96,7 +96,7 @@ export class Reveal {
         // The generator builds every lot from one category; the public lot
         // carries it, so the reveal can label each object without leaking
         // per-object values or names.
-        const category = state.lot?.category ?? "misc";
+        const category = object.category ?? state.lot?.category ?? "misc";
         return el(
           "li",
           { cls: `reveal__item${reduced ? " is-shown" : ""}` },

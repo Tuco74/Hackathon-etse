@@ -2,7 +2,12 @@ import { CONFIG, lotValueBand } from "@trastero/shared";
 import type { LotPublic, LotSecret } from "@trastero/shared";
 import type { Rng } from "./types.js";
 
-const SILHOUETTES = ["s_box", "s_vase", "s_tool", "s_frame", "s_lamp", "s_chest", "s_bottle", "s_statue", "s_guitar", "s_tv", "s_clock", "s_bag"];
+// Canonical ids from E's catalog: the client can resolve them directly.
+const SILHOUETTES = [
+  "sil_tv", "sil_radio", "sil_toolbox", "sil_drill", "sil_chair", "sil_lamp",
+  "sil_vase", "sil_comic", "sil_jacket", "sil_sneaker", "sil_trophy", "sil_mixer",
+  "sil_crate",
+];
 const CATEGORIES = ["electronics", "tools", "jewelry", "art", "misc", "antique"];
 const NAMES: Record<string, string[]> = {
   electronics: ["Radio vieja", "Televisor CRT", "Walkman", "Calculadora"],
@@ -13,8 +18,20 @@ const NAMES: Record<string, string[]> = {
   antique: ["Candelabro", "Espejo", "Reloj de pared", "Báscula"],
 };
 
-function pick<T>(rng: Rng, arr: T[]): T {
+function pick<T>(rng: Rng, arr: readonly T[]): T {
   return arr[Math.floor(rng() * arr.length)] as T;
+}
+
+/** Fisher–Yates with the injected RNG (deterministic for tests). */
+function shuffled<T>(rng: Rng, source: readonly T[]): T[] {
+  const arr = [...source];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = arr[i] as T;
+    arr[i] = arr[j] as T;
+    arr[j] = tmp;
+  }
+  return arr;
 }
 
 function weightedCount(rng: Rng): number {
@@ -35,7 +52,6 @@ export function generateLot(round: number, rng: Rng): { public: LotPublic; secre
   const total = Math.round(range.min + rng() * (range.max - range.min));
 
   const count = weightedCount(rng);
-  const category = pick(rng, CATEGORIES);
 
   // values: one hook ~35-55% of total, rest split
   const values: number[] = [];
@@ -55,6 +71,13 @@ export function generateLot(round: number, rng: Rng): { public: LotPublic; secre
   const sum = values.reduce((a, b) => a + b, 0);
   if (values.length > 0) values[values.length - 1] = (values[values.length - 1] as number) + (total - sum);
 
+  // Each object gets its own category and a distinct silhouette (except the
+  // deliberate trap pair), so preview and reveal don't repeat one image/type
+  // for the whole lot.
+  const catPool = shuffled(rng, CATEGORIES);
+  const categories = Array.from({ length: count }, (_, i) => catPool[i % catPool.length] as string);
+  const silPool = shuffled(rng, SILHOUETTES);
+
   // silhouettes: trap pair chance ~40%
   const silhouettes: string[] = [];
   const objects: LotSecret["objects"] = [];
@@ -62,8 +85,9 @@ export function generateLot(round: number, rng: Rng): { public: LotPublic; secre
   let trapSilhouette: string | null = null;
   let trapIndexA = -1;
   let trapIndexB = -1;
+  let silCursor = 0;
   if (trapPair) {
-    trapSilhouette = pick(rng, SILHOUETTES);
+    trapSilhouette = silPool[silCursor++] as string;
     trapIndexA = Math.floor(rng() * count);
     // bounded search: a degenerate RNG must never hang the generator
     let attempts = 0;
@@ -77,17 +101,23 @@ export function generateLot(round: number, rng: Rng): { public: LotPublic; secre
     }
   }
 
+  const usedNames = new Map<string, Set<string>>();
   for (let i = 0; i < count; i++) {
-    let sil: string;
-    if (trapPair && (i === trapIndexA || i === trapIndexB)) {
-      sil = trapSilhouette!;
-    } else {
-      // avoid reuse? allow
-      sil = pick(rng, SILHOUETTES);
-    }
+    const sil =
+      trapPair && (i === trapIndexA || i === trapIndexB)
+        ? (trapSilhouette as string)
+        : (silPool[silCursor++] ?? silPool[silPool.length - 1] as string);
     silhouettes.push(sil);
+
+    const category = categories[i] as string;
+    const used = usedNames.get(category) ?? new Set<string>();
+    const pool = NAMES[category] ?? NAMES.misc!;
+    const free = pool.filter((name) => !used.has(name));
+    const name = pick(rng, free.length > 0 ? free : pool);
+    used.add(name);
+    usedNames.set(category, used);
+
     const val = Math.max(0, values[i] ?? 0);
-    const name = pick(rng, (NAMES[category] ?? NAMES.misc) as string[]);
     objects.push({ silhouetteId: sil, name, trueValue: val, category });
   }
 
@@ -120,6 +150,8 @@ export function generateLot(round: number, rng: Rng): { public: LotPublic; secre
 
   const id = `lot_r${round}_${Math.floor(rng() * 1e6)}`;
   const clues = [`${count} objetos`, "polvo y cajas", "iluminación tenue"];
+  const uniqueCategories = new Set(objects.map((o) => o.category));
+  const category = uniqueCategories.size > 1 ? "mixed" : (objects[0]?.category ?? "misc");
 
   const publicLot: LotPublic = {
     id,

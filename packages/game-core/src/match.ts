@@ -212,7 +212,7 @@ export function reveal(state: MatchState): MatchState {
   const secret = r.lotSecret;
   const winnerId = r.winnerId;
   const winningBid = r.winningBid;
-  const objects = secret.objects.map((o: { silhouetteId: string; name: string; trueValue: number }) => ({ silhouetteId: o.silhouetteId, name: o.name, value: o.trueValue }));
+  const objects = secret.objects.map((o: { silhouetteId: string; name: string; trueValue: number; category: string }) => ({ silhouetteId: o.silhouetteId, name: o.name, value: o.trueValue, category: o.category }));
   const total = secret.trueTotal;
   let profit: number | null = null;
   if (winnerId) {

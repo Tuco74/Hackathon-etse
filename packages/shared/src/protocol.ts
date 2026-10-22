@@ -166,7 +166,7 @@ export const S2C_BID_EVENT = z.object({
 export const S2C_REVEAL = z.object({
   type: z.literal("S2C_REVEAL"),
   lotId: z.string(),
-  objects: z.array(z.object({ silhouetteId: z.string(), name: z.string(), value: z.number().int() })),
+  objects: z.array(z.object({ silhouetteId: z.string(), name: z.string(), value: z.number().int(), category: z.string() })),
   total: z.number().int(),
   winnerId: z.string().nullable(),
   winningBid: z.number().int(),
